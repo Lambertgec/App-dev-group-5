@@ -15,6 +15,8 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MapStyleOptions;
+import android.content.res.Resources;
 
 
 /**
@@ -88,6 +90,14 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+
+        mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+        try {
+            mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(
+                    getContext(), R.raw.map_style));
+        } catch (Resources.NotFoundException e) {
+            e.printStackTrace();
+        }
 
         LatLng tueCampus = new LatLng(51.448, 5.489);
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(tueCampus, 16f));
