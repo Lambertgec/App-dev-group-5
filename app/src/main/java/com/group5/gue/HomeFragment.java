@@ -4,7 +4,7 @@ import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
 
-import android.content.ContentResolver;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -72,20 +72,33 @@ public class HomeFragment extends Fragment {
         Button button = v.findViewById(R.id.calendarButton);
         Spinner spinner = v.findViewById(R.id.calendarPicker);
 
-        CalendarHandler calendar = new CalendarHandler();
-        ContentResolver cr = requireContext().getContentResolver();
+//        fetch calendars
+        CalendarHandler calendarHandler = new CalendarHandler(requireContext().getContentResolver());
+        ArrayList<String> cals = calendarHandler.getCalendars();
 
-        ArrayList<String> cals = calendar.getCalendars(cr);
+//        populate spinner with users calendars
         ArrayAdapter<String> adapter =
-                new ArrayAdapter<String>(requireContext(),  android.R.layout.simple_spinner_dropdown_item, cals);
+                new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_dropdown_item, cals);
         adapter.setDropDownViewResource( android.R.layout.simple_spinner_dropdown_item);
-
         spinner.setAdapter(adapter);
 
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                text.setText("fetched events will show here");
+                text.setText("");
+                calendarHandler.setCalendar(spinner.getSelectedItem().toString());
+
+                try {
+                    ArrayList<String> events = calendarHandler.fetchEvents();
+
+                    for (String entry : events) {
+                        text.append(entry);
+                    }
+                } catch (Exception e) {
+                    text.setText("no calendar selected");
+                    Log.d("calendar", e.toString());
+                }
+
             }
         });
         return v;
