@@ -4,9 +4,16 @@ import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
 
+import android.content.ContentResolver;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.Spinner;
+import android.widget.TextView;
+
+import java.util.ArrayList;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -59,6 +66,29 @@ public class HomeFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_home, container, false);
+        View v = inflater.inflate(R.layout.fragment_home, container, false);
+
+        TextView text = v.findViewById(R.id.textView);
+        Button button = v.findViewById(R.id.calendarButton);
+        Spinner spinner = v.findViewById(R.id.calendarPicker);
+
+        CalendarHandler calendar = new CalendarHandler();
+        ContentResolver cr = requireContext().getContentResolver();
+
+        ArrayList<String> cals = calendar.getCalendars(cr);
+        ArrayAdapter<String> adapter =
+                new ArrayAdapter<String>(requireContext(),  android.R.layout.simple_spinner_dropdown_item, cals);
+        adapter.setDropDownViewResource( android.R.layout.simple_spinner_dropdown_item);
+
+        spinner.setAdapter(adapter);
+
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                text.setText("fetched events will show here");
+            }
+        });
+        return v;
     }
+
 }
