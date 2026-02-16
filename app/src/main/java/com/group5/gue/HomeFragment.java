@@ -3,17 +3,11 @@ package com.group5.gue;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.Spinner;
-import android.widget.TextView;
-
-import java.util.ArrayList;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -68,40 +62,11 @@ public class HomeFragment extends Fragment {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_home, container, false);
 
-        TextView text = v.findViewById(R.id.textView);
-        Button button = v.findViewById(R.id.calendarButton);
-        Spinner spinner = v.findViewById(R.id.calendarPicker);
+//        insert calendar fragment
+        FragmentTransaction transaction = getChildFragmentManager().beginTransaction();
+        transaction.replace(R.id.frameLayout, new CalendarFragment()).commit();
 
-//        fetch calendars
-        CalendarHandler calendarHandler = new CalendarHandler(requireContext().getContentResolver());
-        ArrayList<String> cals = calendarHandler.getCalendars();
-
-//        populate spinner with users calendars
-        ArrayAdapter<String> adapter =
-                new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_dropdown_item, cals);
-        adapter.setDropDownViewResource( android.R.layout.simple_spinner_dropdown_item);
-        spinner.setAdapter(adapter);
-
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                text.setText("");
-                calendarHandler.setCalendar(spinner.getSelectedItem().toString());
-
-                try {
-                    ArrayList<String> events = calendarHandler.fetchEvents();
-
-                    for (String entry : events) {
-                        text.append(entry);
-                    }
-                } catch (Exception e) {
-                    text.setText("no calendar selected");
-                    Log.d("calendar", e.toString());
-                }
-
-            }
-        });
-        return v;
+        return  v;
     }
 
 }
