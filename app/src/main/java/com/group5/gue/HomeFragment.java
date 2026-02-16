@@ -2,11 +2,18 @@ package com.group5.gue;
 
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.content.Intent;
+
+import com.group5.gue.data.auth.AuthRepository;
+import com.group5.gue.ui.login.LoginActivity;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -60,5 +67,19 @@ public class HomeFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_home, container, false);
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        
+        Button logoutButton = view.findViewById(R.id.logout_button);
+        logoutButton.setOnClickListener(v -> {
+            AuthRepository.getInstance(requireContext()).logout(result -> {
+                // Navigate back to login
+                startActivity(new Intent(requireContext(), LoginActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+            });
+        });
     }
 }
