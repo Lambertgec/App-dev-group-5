@@ -1,9 +1,12 @@
 package com.group5.gue.data;
 
+import android.util.Log;
+
 /**
  * A generic class that holds a result success w/ data or an error exception.
  */
 public class Result<T> {
+    private static final String LOG_TAG = "Result";
     // hide the private constructor to limit subclass types (Success, Error)
     private Result() {
     }
@@ -26,6 +29,7 @@ public class Result<T> {
 
         public Success(T data) {
             this.data = data;
+            Log.d(LOG_TAG, "Success: " + String.valueOf(data));
         }
 
         public T getData() {
@@ -39,6 +43,7 @@ public class Result<T> {
 
         public Error(Exception error) {
             this.error = error;
+            Log.e(LOG_TAG, "Error", error);
         }
 
         public Exception getError() {

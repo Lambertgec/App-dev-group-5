@@ -26,7 +26,8 @@ class LauncherActivity : AppCompatActivity() {
                 finish()
                 return@resolveSession
             }
-            val role = authRepository.getCachedUser()?.getRole() ?: Role.USER
+            
+            val role = authRepository.getCachedUser()?.role ?: Role.USER
             if (role == Role.ADMIN) {
                 startActivity(Intent(this, AdminMainActivity::class.java))
             } else {

@@ -1,24 +1,21 @@
 package com.group5.gue.data.auth;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 
 import com.group5.gue.data.Result;
-import com.group5.gue.data.model.Role;
 import com.group5.gue.data.model.User;
+import com.group5.gue.data.repository.UserRepository;
 
 public class AuthRepository {
 
     private static volatile AuthRepository instance;
     private final AuthDataSource dataSource;
-    private User cachedUser;
+    private final UserRepository userRepository;
+    private User cachedUser; //this should persist throughout the app
 
     private AuthRepository(Context context) {
         this.dataSource = new AuthDataSource(context.getApplicationContext());
-        String userId = this.dataSource.getCachedUserId();
-        if (userId != null) {
-            this.cachedUser = new User(userId, Role.USER); // make api call to get user profile
-        }
+        this.userRepository = new UserRepository();
     }
 
     public static AuthRepository getInstance(Context context) {
@@ -28,26 +25,22 @@ public class AuthRepository {
         return instance;
     }
 
-    public boolean isLoggedIn() {
-        if (cachedUser != null) {
-            return true;
-        }
-        String userId = dataSource.getCachedUserId();
-        if (userId != null) {
-            cachedUser = new User(userId, Role.USER);
-            return true;
-        }
-        return false;
-    }
-
     public User getCachedUser() {
         return cachedUser;
     }
 
     public void resolveSession(UserIdCallback callback) {
-        dataSource.getCachedUserIdAsync(userId -> {
+        dataSource.getCachedUserId(userId -> {
             if (userId != null) {
-                cachedUser = new User(userId, Role.USER);
+                userRepository.getUserById(userId, result -> {
+                    if (result instanceof Result.Success) {
+                        cachedUser = ((Result.Success<User>) result).getData();
+                    }
+                    if (callback != null) {
+                        callback.onResult(userId);
+                    }
+                });
+                return;
             } else {
                 cachedUser = null;
             }
@@ -57,41 +50,20 @@ public class AuthRepository {
         });
     }
 
+
     public void logout(AuthCallback callback) {
-        dataSource.logout(wrapLogoutCallback(callback));
+        dataSource.logout(callback);
     }
 
     public void signInWithEmail(String email, String password, AuthCallback callback) {
-        dataSource.signInWithEmail(email, password, wrapCallback(callback));
+        dataSource.signInWithEmail(email, password, callback);
     }
 
     public void signUpWithEmail(String email, String password, AuthCallback callback) {
-        dataSource.signUpWithEmail(email, password, wrapCallback(callback));
+        dataSource.signUpWithEmail(email, password, callback);
     }
 
     public void signInWithGoogle(AuthCallback callback) {
-        dataSource.signInWithGoogle(wrapCallback(callback));
-    }
-
-    private AuthCallback wrapCallback(AuthCallback callback) {
-        return result -> {
-            if (result instanceof Result.Success) {
-                cachedUser = ((Result.Success<User>) result).getData();
-            } else if (result instanceof Result.Error) {
-                cachedUser = null;
-            }
-            if (callback != null) {
-                callback.onResult(result);
-            }
-        };
-    }
-
-    private AuthCallback wrapLogoutCallback(AuthCallback callback) {
-        return result -> {
-            cachedUser = null;
-            if (callback != null) {
-                callback.onResult(result);
-            }
-        };
+        dataSource.signInWithGoogle(callback);
     }
 }

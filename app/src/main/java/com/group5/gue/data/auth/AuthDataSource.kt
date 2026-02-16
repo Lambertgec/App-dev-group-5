@@ -6,39 +6,28 @@ import androidx.credentials.GetCredentialRequest
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.group5.gue.data.Result
-import com.group5.gue.data.model.Role
 import com.group5.gue.data.model.User
-import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.providers.builtin.IDToken
-import io.github.jan.supabase.createSupabaseClient
-import io.github.jan.supabase.auth.AuthConfig
+import com.group5.gue.data.supabase.SupabaseClientProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.first
+import io.github.jan.supabase.auth.status.SessionStatus
 import java.security.MessageDigest
 import java.util.UUID
 
-private const val SUPABASE_URL = "https://wvcpjygatizwlusdgwno.supabase.co"
-private const val SUPABASE_KEY = "sb_publishable_p5UsVza2oMOi-P2jGDX3xg_7GtMduWT"
 private const val GOOGLE_CLIENT_ID = "169457876103-h5ap7v1s8tbbghhuqpe5gdajk8adomah.apps.googleusercontent.com"
 
 class AuthDataSource(
     private val context: Context
 ) {
-    private val prefs = context.getSharedPreferences("auth_tokens", Context.MODE_PRIVATE)
-
-    private val supabase = createSupabaseClient(
-        supabaseUrl = SUPABASE_URL,
-        supabaseKey = SUPABASE_KEY
-    ) {
-        install(Auth)
-    }
+    private val supabase = SupabaseClientProvider.client
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -49,16 +38,7 @@ class AuthDataSource(
                     this.email = email
                     this.password = password
                 }
-                // Save session tokens for persistence
-                val session = supabase.auth.currentSessionOrNull()
-                if (session != null) {
-                    prefs.edit().apply {
-                        putString("access_token", session.accessToken)
-                        putString("refresh_token", session.refreshToken)
-                        apply()
-                    }
-                }
-                Result.Success(User(email, Role.USER))
+                Result.Success(User(email, false))
             } catch (e: Exception) {
                 Result.Error<User>(Exception(e.localizedMessage ?: "Sign up failed", e))
             }
@@ -76,16 +56,7 @@ class AuthDataSource(
                     this.email = email
                     this.password = password
                 }
-                // Save session tokens for persistence
-                val session = supabase.auth.currentSessionOrNull()
-                if (session != null) {
-                    prefs.edit().apply {
-                        putString("access_token", session.accessToken)
-                        putString("refresh_token", session.refreshToken)
-                        apply()
-                    }
-                }
-                Result.Success(User(email, Role.USER))
+                Result.Success(User(email, false))
             } catch (e: Exception) {
                 Result.Error<User>(Exception(e.localizedMessage ?: "Sign in failed", e))
             }
@@ -126,16 +97,7 @@ class AuthDataSource(
                     provider = Google
                     nonce = noncePair.raw
                 }
-                // Save session tokens for persistence
-                val session = supabase.auth.currentSessionOrNull()
-                if (session != null) {
-                    prefs.edit().apply {
-                        putString("access_token", session.accessToken)
-                        putString("refresh_token", session.refreshToken)
-                        apply()
-                    }
-                }
-                Result.Success(User("Google User", Role.USER))
+                Result.Success(User("Google User", false))
             } catch (e: Exception) {
                 Result.Error<User>(Exception(e.localizedMessage ?: "Google sign in failed", e))
             }
@@ -144,51 +106,11 @@ class AuthDataSource(
         }
     }
 
-    fun getCachedUserId(): String? {
-        val session = supabase.auth.currentSessionOrNull()
-        if (session != null) {
-            return session.user?.id
-        }
-        return null
-     }
-
-    fun getCachedUserIdAsync(callback: UserIdCallback) {
-        scope.launch {
-            // Restore tokens from SharedPreferences on cold start
-            val accessToken = prefs.getString("access_token", null)
-            val refreshToken = prefs.getString("refresh_token", null)
-            
-            if (accessToken != null && refreshToken != null) {
-                try {
-                    supabase.auth.refreshSession(refreshToken)
-                } catch (e: Exception) {
-                    // Refresh failed, tokens may be expired
-                }
-            }
-            
-            var userId = getCachedUserId()
-            if (userId == null) {
-                delay(250)
-                userId = getCachedUserId()
-            }
-            withContext(Dispatchers.Main) {
-                callback.onResult(userId)
-            }
-        }
-    }
-    
-
     fun logout(callback: AuthCallback) {
         scope.launch(Dispatchers.Main.immediate) {
             val result: Result<User> = try {
                 supabase.auth.signOut()
-                // Clear stored tokens
-                prefs.edit().apply {
-                    remove("access_token")
-                    remove("refresh_token")
-                    apply()
-                }
-                Result.Success(User("", Role.USER))
+                Result.Success(User("", false))
             } catch (e: Exception) {
                 Result.Error<User>(Exception(e.localizedMessage ?: "Logout failed", e))
             }
@@ -197,7 +119,25 @@ class AuthDataSource(
         }
     }
 
+    fun getCachedUserId(callback: UserIdCallback) {
+        scope.launch {
+            val userId = awaitUserIdFromSession()
+            withContext(Dispatchers.Main) {
+                callback.onResult(userId)
+            }
+        }
+    }
 
+    private suspend fun awaitUserIdFromSession(): String? {
+        val status = supabase.auth.sessionStatus.first { it !is SessionStatus.Initializing }
+        return when (status) {
+            is SessionStatus.Authenticated -> status.session.user?.id
+            is SessionStatus.NotAuthenticated -> null
+            is SessionStatus.RefreshFailure -> null
+            SessionStatus.Initializing -> null
+        }
+    }
+    
     private fun createNonce(): NoncePair {
         val rawNonce = UUID.randomUUID().toString()
         val bytes = rawNonce.toByteArray()
@@ -214,9 +154,6 @@ fun interface AuthCallback {
    fun onResult(result: Result<User>)
 }
 
-fun interface RoleCallback {
-    fun onResult(result: Result<Role>)
-}
 
 fun interface UserIdCallback {
     fun onResult(userId: String?)
