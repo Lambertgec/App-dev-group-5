@@ -73,7 +73,12 @@ public class CalendarFragment extends Fragment {
         Spinner spinner = v.findViewById(R.id.calendarPicker);
 
 //        fetch calendars
-        CalendarHandler calendarHandler = new CalendarHandler(requireContext().getContentResolver());
+        CalendarHandler calendarHandler = null;
+        try {
+            calendarHandler = new CalendarHandler(requireActivity());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         ArrayList<String> cals = calendarHandler.getCalendars();
 
 //        populate spinner with users calendars
@@ -82,21 +87,17 @@ public class CalendarFragment extends Fragment {
         adapter.setDropDownViewResource( android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
 
+        CalendarHandler finalCalendarHandler = calendarHandler;
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 text.setText("");
-                calendarHandler.setCalendar(spinner.getSelectedItem().toString());
+                finalCalendarHandler.setCalendar(spinner.getSelectedItem().toString());
 
-                try {
-                    ArrayList<String> events = calendarHandler.fetchEvents();
+                ArrayList<String> events = finalCalendarHandler.fetchEvents();
 
-                    for (String entry : events) {
-                        text.append(entry);
-                    }
-                } catch (Exception e) {
-                    text.setText("no calendar selected");
-                    Log.d("calendar", e.toString());
+                for (String entry : events) {
+                    text.append(entry);
                 }
 
             }
