@@ -1,5 +1,6 @@
 package com.group5.gue;
 
+import android.Manifest;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -13,6 +14,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.content.Intent;
 
+import com.group5.gue.data.PermissionHandler;
 import com.group5.gue.data.auth.AuthRepository;
 import com.group5.gue.ui.login.LoginActivity;
 
@@ -69,9 +71,8 @@ public class HomeFragment extends Fragment {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_home, container, false);
 
-//        insert calendar fragment
-        FragmentTransaction transaction = getChildFragmentManager().beginTransaction();
-        transaction.replace(R.id.frameLayout, new CalendarFragment()).commit();
+        Button showCalendarButton = v.findViewById(R.id.showCalendarButton);
+        showCalendarButton.setVisibility(View.INVISIBLE);
 
         return  v;
     }
@@ -88,6 +89,33 @@ public class HomeFragment extends Fragment {
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
             });
         });
+
+//        add calendar if has permission, else request it
+        PermissionHandler permissionHandler = new PermissionHandler(requireActivity());
+        if (permissionHandler.checkPermission(Manifest.permission.READ_CALENDAR)) {
+            //        insert calendar fragment
+            FragmentTransaction transaction = getChildFragmentManager().beginTransaction();
+            transaction.replace(R.id.frameLayout, new CalendarFragment()).commit();
+        } else {
+            Button showCalendarButton = view.findViewById(R.id.showCalendarButton);
+            showCalendarButton.setVisibility(View.VISIBLE);
+
+            showCalendarButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    permissionHandler.requestPermission(Manifest.permission.READ_CALENDAR);
+
+                    if (permissionHandler.checkPermission(Manifest.permission.READ_CALENDAR)) {
+                        FragmentTransaction transaction = getChildFragmentManager().beginTransaction();
+                        transaction.replace(R.id.frameLayout, new CalendarFragment()).commit();
+                        showCalendarButton.setVisibility(View.INVISIBLE);
+
+                    }
+                }
+            });
+        }
+
+
     }
 
 }

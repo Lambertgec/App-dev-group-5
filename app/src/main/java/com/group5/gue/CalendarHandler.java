@@ -1,9 +1,7 @@
 package com.group5.gue;
 
-import android.Manifest;
 import android.app.Activity;
 import android.content.ContentResolver;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.icu.text.DateFormat;
 import android.icu.text.SimpleDateFormat;
@@ -22,14 +20,8 @@ public class CalendarHandler {
     private String calendarName;
     private final ContentResolver contentResolver;
 
-    public CalendarHandler(Activity activity) throws Exception {
+    public CalendarHandler(Activity activity) {
         this.contentResolver = activity.getContentResolver();
-        boolean permissionGiven = checkPermission(activity);
-
-        if (!permissionGiven) {
-            throw new Exception("no permission");
-        }
-
     }
 
     public ArrayList<String> getCalendars(){
@@ -98,26 +90,5 @@ public class CalendarHandler {
 
     public void setCalendar(String calendarName) {
         this.calendarName = calendarName;
-    }
-
-
-    public static boolean checkPermission(Activity activity) {
-
-        if (ContextCompat.checkSelfPermission(activity,
-                Manifest.permission.READ_CALENDAR)
-                == PackageManager.PERMISSION_GRANTED) {
-
-            return true;
-
-        } else {
-
-            ActivityCompat.requestPermissions(activity,
-                    new String[]{Manifest.permission.READ_CALENDAR},
-                    1);
-
-            return ContextCompat.checkSelfPermission(activity,
-                    Manifest.permission.READ_CALENDAR)
-                    == PackageManager.PERMISSION_GRANTED;
-        }
     }
 }
