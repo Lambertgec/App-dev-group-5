@@ -4,8 +4,6 @@ import android.app.Activity;
 
 import android.content.Intent;
 import android.os.Bundle;
-
-import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -24,6 +22,7 @@ import com.group5.gue.data.auth.AuthRepository;
 import com.group5.gue.databinding.ActivityLoginBinding;
 import com.group5.gue.ui.login.launcher.LauncherActivity;
 
+
 public class LoginActivity extends AppCompatActivity {
 
     private ActivityLoginBinding binding;
@@ -40,6 +39,7 @@ public class LoginActivity extends AppCompatActivity {
         final EditText usernameEditText = binding.email;
         final EditText passwordEditText = binding.password;
         final Button loginButton = binding.login;
+        final Button signUpButton = binding.signUp;
         final Button googleButton = binding.loginGoogle;
         final ProgressBar loadingProgressBar = binding.loading;
 
@@ -60,6 +60,15 @@ public class LoginActivity extends AppCompatActivity {
             public void onClick(View v) {
                 loadingProgressBar.setVisibility(View.VISIBLE);
                 signInWithEmail(usernameEditText.getText().toString(),
+                        passwordEditText.getText().toString(), loadingProgressBar);
+            }
+        });
+
+        signUpButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                loadingProgressBar.setVisibility(View.VISIBLE);
+                signUpWithEmail(usernameEditText.getText().toString(),
                         passwordEditText.getText().toString(), loadingProgressBar);
             }
         });
@@ -95,6 +104,29 @@ public class LoginActivity extends AppCompatActivity {
                 startActivity(new Intent(LoginActivity.this, LauncherActivity.class));
                 setResult(Activity.RESULT_OK);
                 finish();
+            } else if (result instanceof Result.Error) {
+                Result.Error<?> error = (Result.Error<?>) result;
+                String message = error.getError() != null
+                        ? error.getError().getMessage()
+                        : getString(R.string.login_failed);
+                Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+            } else {
+                showLoginFailed(R.string.login_failed);
+            }
+        });
+    }
+
+    private void signUpWithEmail(String email, String password, ProgressBar loadingProgressBar) {
+        authRepository.signUpWithEmail(email, password, result -> {
+            loadingProgressBar.setVisibility(View.GONE);
+            if (result instanceof Result.Success) {
+                if (authRepository.isLoggedIn()) {
+                    startActivity(new Intent(LoginActivity.this, LauncherActivity.class));
+                    setResult(Activity.RESULT_OK);
+                    finish();
+                    return;
+                }
+                Toast.makeText(getApplicationContext(), "Sign up successful. Please sign in.", Toast.LENGTH_SHORT).show();
             } else if (result instanceof Result.Error) {
                 Result.Error<?> error = (Result.Error<?>) result;
                 String message = error.getError() != null
