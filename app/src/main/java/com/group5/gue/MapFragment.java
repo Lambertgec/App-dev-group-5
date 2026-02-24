@@ -17,6 +17,16 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import android.content.res.Resources;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+
+import android.Manifest;
+import android.content.pm.PackageManager;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import android.widget.Button;
 
 
 /**
@@ -26,6 +36,9 @@ import android.content.res.Resources;
  */
 public class MapFragment extends Fragment implements OnMapReadyCallback {
     private GoogleMap mMap;
+    private FusedLocationProviderClient fusedLocationClient;
+    private static final int LOCATION_PERMISSION_REQUEST = 1;
+    LatLng tueCampus = new LatLng(51.448, 5.489);
 
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -78,6 +91,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
+        Button btnCenterTue = view.findViewById(R.id.btn_center_tue);
+
         SupportMapFragment mapFragment =
                 (SupportMapFragment) getChildFragmentManager()
                         .findFragmentById(R.id.map);
@@ -85,6 +101,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         if (mapFragment != null) {
             mapFragment.getMapAsync(this);
         }
+        btnCenterTue.setOnClickListener(v -> {
+            if (mMap != null) {
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(tueCampus, 16f));
+            }
+        });
+
     }
 
     @Override
@@ -99,7 +121,62 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             e.printStackTrace();
         }
 
-        LatLng tueCampus = new LatLng(51.448, 5.489);
+        if (ContextCompat.checkSelfPermission(requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+
+            mMap.setMyLocationEnabled(true);
+
+        } else {
+            requestPermissions(
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    LOCATION_PERMISSION_REQUEST
+            );
+        }
+
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(tueCampus, 16f));
+
+        // Adding markers to the Map
+        // TODO: get the exact coordinates from database + additional info
+        LatLng metaforum = new LatLng(51.447868, 5.487455);
+        LatLng atlas = new LatLng(51.44784, 5.48605);
+        LatLng auditorium = new LatLng(51.447910, 5.484945);
+
+        mMap.addMarker(new MarkerOptions()
+                .position(metaforum)
+                .title("MF (Metaforum)")
+                .icon(BitmapDescriptorFactory.defaultMarker(
+                        BitmapDescriptorFactory.HUE_BLUE))
+                .snippet("Contains the TU/e library and ESA desk"));
+        mMap.addMarker(new MarkerOptions()
+                .position(atlas)
+                .title("Atlas")
+                .icon(BitmapDescriptorFactory.defaultMarker(
+                        BitmapDescriptorFactory.HUE_BLUE)));
+        mMap.addMarker(new MarkerOptions()
+                .position(auditorium)
+                .title("Aud (Auditorium)")
+                .icon(BitmapDescriptorFactory.defaultMarker(
+                        BitmapDescriptorFactory.HUE_BLUE))
+                .snippet("Contains most lecture rooms"));
+        // TODO: add more buildings
+    }
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+
+        if (requestCode == LOCATION_PERMISSION_REQUEST) {
+            if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                if (ActivityCompat.checkSelfPermission(requireContext(),
+                        Manifest.permission.ACCESS_FINE_LOCATION)
+                        == PackageManager.PERMISSION_GRANTED) {
+
+                    mMap.setMyLocationEnabled(true);
+                }
+            }
+        }
     }
 }
