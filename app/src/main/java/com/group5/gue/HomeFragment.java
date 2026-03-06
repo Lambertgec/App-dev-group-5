@@ -15,7 +15,7 @@ import android.widget.Button;
 import android.content.Intent;
 
 import com.group5.gue.data.PermissionHandler;
-import com.group5.gue.data.auth.AuthRepository;
+import com.group5.gue.data.auth.AuthManager;
 import com.group5.gue.ui.login.LoginActivity;
 
 /**
@@ -83,7 +83,7 @@ public class HomeFragment extends Fragment {
 
         Button logoutButton = view.findViewById(R.id.logout_button);
         logoutButton.setOnClickListener(v -> {
-            AuthRepository.getInstance(requireContext()).logout(result -> {
+            AuthManager.Companion.getInstance(requireContext()).logout(result -> {
                 // Navigate back to login
                 startActivity(new Intent(requireContext(), LoginActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));

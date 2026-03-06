@@ -1,32 +1,22 @@
 package com.group5.gue.ui.login;
 
 import android.app.Activity;
-
-import android.content.Intent;
 import android.os.Bundle;
-import androidx.annotation.StringRes;
-import androidx.appcompat.app.AppCompatActivity;
-
-import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.group5.gue.R;
 import com.group5.gue.data.Result;
-import com.group5.gue.data.auth.AuthRepository;
+import com.group5.gue.data.auth.AuthManager;
 import com.group5.gue.databinding.ActivityLoginBinding;
-import com.group5.gue.ui.login.launcher.LauncherActivity;
-
 
 public class LoginActivity extends AppCompatActivity {
 
     private ActivityLoginBinding binding;
-    private AuthRepository authRepository;
+    private AuthManager authManager;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -35,111 +25,74 @@ public class LoginActivity extends AppCompatActivity {
         binding = ActivityLoginBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        authRepository = AuthRepository.getInstance(this);
-        final EditText usernameEditText = binding.email;
-        final EditText passwordEditText = binding.password;
-        final Button loginButton = binding.login;
-        final Button signUpButton = binding.signUp;
-        final Button googleButton = binding.loginGoogle;
-        final ProgressBar loadingProgressBar = binding.loading;
+        authManager = AuthManager.Companion.getInstance(this);
 
-        passwordEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    signInWithEmail(usernameEditText.getText().toString(),
-                            passwordEditText.getText().toString(), loadingProgressBar);
-                }
-                return false;
+        binding.password.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                doSignIn();
             }
+            return false;
         });
 
-        loginButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                loadingProgressBar.setVisibility(View.VISIBLE);
-                signInWithEmail(usernameEditText.getText().toString(),
-                        passwordEditText.getText().toString(), loadingProgressBar);
-            }
-        });
-
-        signUpButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                loadingProgressBar.setVisibility(View.VISIBLE);
-                signUpWithEmail(usernameEditText.getText().toString(),
-                        passwordEditText.getText().toString(), loadingProgressBar);
-            }
-        });
-
-        googleButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                loadingProgressBar.setVisibility(View.VISIBLE);
-                authRepository.signInWithGoogle(result -> {
-                    loadingProgressBar.setVisibility(View.GONE);
-                    if (result instanceof Result.Success) {
-                        startActivity(new Intent(LoginActivity.this, LauncherActivity.class));
-                        setResult(Activity.RESULT_OK);
-                        finish();
-                    } else if (result instanceof Result.Error) {
-                        Result.Error<?> error = (Result.Error<?>) result;
-                        String message = error.getError() != null
-                                ? error.getError().getMessage()
-                                : getString(R.string.login_failed);
-                        Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
-                    } else {
-                        showLoginFailed(R.string.login_failed);
-                    }
-                });
-            }
-        });
+        binding.login.setOnClickListener(v -> doSignIn());
+        binding.signUp.setOnClickListener(v -> doSignUp());
+        binding.loginGoogle.setOnClickListener(v -> doGoogleSignIn());
     }
 
-    private void signInWithEmail(String email, String password, ProgressBar loadingProgressBar) {
-        authRepository.signInWithEmail(email, password, result -> {
-            loadingProgressBar.setVisibility(View.GONE);
+    private void doSignIn() {
+        binding.loading.setVisibility(View.VISIBLE);
+        String email = binding.email.getText().toString();
+        String password = binding.password.getText().toString();
+
+        authManager.signInWithEmail(email, password, result -> {
+            binding.loading.setVisibility(View.GONE);
             if (result instanceof Result.Success) {
-                startActivity(new Intent(LoginActivity.this, LauncherActivity.class));
                 setResult(Activity.RESULT_OK);
                 finish();
-            } else if (result instanceof Result.Error) {
-                Result.Error<?> error = (Result.Error<?>) result;
-                String message = error.getError() != null
-                        ? error.getError().getMessage()
-                        : getString(R.string.login_failed);
-                Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
             } else {
-                showLoginFailed(R.string.login_failed);
+                showError(result);
             }
         });
     }
 
-    private void signUpWithEmail(String email, String password, ProgressBar loadingProgressBar) {
-        authRepository.signUpWithEmail(email, password, result -> {
-            loadingProgressBar.setVisibility(View.GONE);
+    private void doSignUp() {
+        binding.loading.setVisibility(View.VISIBLE);
+        String email = binding.email.getText().toString();
+        String password = binding.password.getText().toString();
+
+        authManager.signUpWithEmail(email, password, result -> {
+            binding.loading.setVisibility(View.GONE);
             if (result instanceof Result.Success) {
-                if (authRepository.isLoggedIn()) {
-                    startActivity(new Intent(LoginActivity.this, LauncherActivity.class));
-                    setResult(Activity.RESULT_OK);
-                    finish();
-                    return;
-                }
-                Toast.makeText(getApplicationContext(), "Sign up successful. Please sign in.", Toast.LENGTH_SHORT).show();
-            } else if (result instanceof Result.Error) {
-                Result.Error<?> error = (Result.Error<?>) result;
-                String message = error.getError() != null
-                        ? error.getError().getMessage()
-                        : getString(R.string.login_failed);
-                Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+                setResult(Activity.RESULT_OK);
+                finish();
             } else {
-                showLoginFailed(R.string.login_failed);
+                showError(result);
             }
         });
     }
 
-    private void showLoginFailed(@StringRes Integer errorString) {
-        Toast.makeText(getApplicationContext(), errorString, Toast.LENGTH_SHORT).show();
+    private void doGoogleSignIn() {
+        binding.loading.setVisibility(View.VISIBLE);
+
+        authManager.signInWithGoogle(result -> {
+            binding.loading.setVisibility(View.GONE);
+            if (result instanceof Result.Success) {
+                setResult(Activity.RESULT_OK);
+                finish();
+            } else {
+                showError(result);
+            }
+        });
+    }
+
+    private void showError(Result<?> result) {
+        String message = getString(R.string.login_failed);
+        if (result instanceof Result.Error) {
+            Exception error = ((Result.Error<?>) result).getError();
+            if (error != null && error.getMessage() != null) {
+                message = error.getMessage();
+            }
+        }
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 }

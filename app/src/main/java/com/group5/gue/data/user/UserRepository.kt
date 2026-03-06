@@ -1,0 +1,38 @@
+package com.group5.gue.data.user
+
+import com.group5.gue.api.BaseRepository
+import com.group5.gue.data.model.User
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+class UserRepository private constructor() {
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var cachedUser: User? = null
+
+    companion object {
+        @Volatile
+        private var instance: UserRepository? = null
+
+        fun getInstance(): UserRepository {
+            return instance ?: synchronized(this) {
+                instance ?: UserRepository().also { instance = it }
+            }
+        }
+    }
+
+    fun getCachedUser(): User? = cachedUser
+
+    fun setCachedUser(user: User?) { cachedUser = user }
+
+    fun fetchAndCacheUser(userId: String, callback: (User?) -> Unit) {
+        scope.launch {
+            val user = BaseRepository.fetchSingle<User>("profile", "id", userId)
+            cachedUser = user
+            withContext(Dispatchers.Main) { callback(user) }
+        }
+    }
+}
