@@ -1,6 +1,7 @@
 package com.group5.gue.data.user
 
 import com.group5.gue.api.BaseRepository
+import com.group5.gue.api.fetchSingle
 import com.group5.gue.data.model.User
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -9,7 +10,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class UserRepository private constructor() {
+class UserRepository private constructor() : BaseRepository {
+
+    override val tableName = "profile"
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var cachedUser: User? = null
@@ -42,7 +45,7 @@ class UserRepository private constructor() {
         val retryDelayMs = 250L
 
         repeat(maxAttempts) { attempt ->
-            val user = BaseRepository.fetchSingle<User>("profile", "id", userId)
+            val user = fetchSingle<User>("id", userId)
             if (user != null && user.id.isNotBlank()) {
                 return user
             }
