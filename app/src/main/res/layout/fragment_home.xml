@@ -9,6 +9,7 @@
     tools:context=".HomeFragment">
 
     <LinearLayout
+        android:id="@+id/full_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
@@ -52,7 +53,23 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Show calendar" />
+
         </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/frameLayout_2"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <Button
+                android:id="@+id/collectiblesButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Collectibles" />
+
+        </FrameLayout>
+
+
 
 
     </LinearLayout>
