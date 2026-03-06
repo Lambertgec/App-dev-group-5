@@ -7,21 +7,21 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.group5.gue.AdminMainActivity
 import com.group5.gue.MainActivity
-import com.group5.gue.api.SupabaseProvider
+import com.group5.gue.data.auth.AuthManager
 import com.group5.gue.data.model.Role
 import com.group5.gue.data.user.UserRepository
 import com.group5.gue.ui.login.LoginActivity
-import io.github.jan.supabase.auth.auth
 
 class LauncherActivity : AppCompatActivity() {
 
+    private lateinit var authManager: AuthManager
     private val userRepository = UserRepository.getInstance()
 
     private val loginLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK) {
-            fetchProfileAndRoute()
+            checkSession()
         } else {
             finish()
         }
@@ -29,33 +29,33 @@ class LauncherActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        authManager = AuthManager.getInstance(this)
         checkSession()
     }
 
     private fun checkSession() {
-        val session = SupabaseProvider.supabaseClient.auth.currentSessionOrNull()
-        if (session?.user != null) {
-            fetchProfileAndRoute()
-        } else {
-            loginLauncher.launch(Intent(this, LoginActivity::class.java))
+        authManager.getCachedUserId { userId ->
+            if (userId != null) {
+                fetchProfileAndRoute(userId)
+            } else {
+                loginLauncher.launch(Intent(this, LoginActivity::class.java))
+            }
         }
     }
 
-    private fun fetchProfileAndRoute() {
-        val userId = SupabaseProvider.supabaseClient.auth.currentSessionOrNull()?.user?.id
-        if (userId == null) {
-            loginLauncher.launch(Intent(this, LoginActivity::class.java))
-            return
-        }
-
+    private fun fetchProfileAndRoute(userId: String) {
         userRepository.fetchAndCacheUser(userId) { user ->
-            Log.d("LauncherActivity", "User fetched: $user")
-            if (user != null && user.role == Role.ADMIN) {
-                startActivity(Intent(this, AdminMainActivity::class.java))
+            Log.d("LauncherActivity", "User fetched: $user for userId: $userId")
+            if (user != null) {
+                if(user.isAdmin) {
+                    startActivity(Intent(this, AdminMainActivity::class.java))
+                } else {
+                    startActivity(Intent(this, MainActivity::class.java))
+                }
+                finish()
             } else {
-                startActivity(Intent(this, MainActivity::class.java))
+                loginLauncher.launch(Intent(this, LoginActivity::class.java))
             }
-            finish()
         }
     }
 }

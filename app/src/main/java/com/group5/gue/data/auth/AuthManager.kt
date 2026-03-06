@@ -12,11 +12,14 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.providers.builtin.IDToken
+import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.security.MessageDigest
 import java.util.UUID
 
@@ -126,6 +129,28 @@ class AuthManager private constructor(context: Context) {
         }
     }
 
+    fun getCachedUserId(callback: UserIdCallback) {
+        scope.launch {
+            val userId = awaitUserIdFromSession()
+            withContext(Dispatchers.Main) {
+                callback.onResult(userId)
+            }
+        }
+    }
+
+    private suspend fun awaitUserIdFromSession(): String? {
+        val status = withTimeoutOrNull(3000L) {
+            supabase.auth.sessionStatus.first { it !is SessionStatus.Initializing }
+        } ?: return null
+
+        return when (status) {
+            is SessionStatus.Authenticated -> status.session.user?.id
+            is SessionStatus.NotAuthenticated -> null
+            is SessionStatus.RefreshFailure -> null
+            SessionStatus.Initializing -> null
+        }
+    }
+
     private fun createNonce(): NoncePair {
         val rawNonce = UUID.randomUUID().toString()
         val bytes = rawNonce.toByteArray()
@@ -140,4 +165,8 @@ data class NoncePair(val raw: String, val hashed: String)
 
 fun interface AuthCallback {
     fun onResult(result: Result<Void>)
+}
+
+fun interface UserIdCallback {
+    fun onResult(userId: String?)
 }

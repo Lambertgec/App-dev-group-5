@@ -5,6 +5,7 @@ import com.group5.gue.data.model.User
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -30,9 +31,25 @@ class UserRepository private constructor() {
 
     fun fetchAndCacheUser(userId: String, callback: (User?) -> Unit) {
         scope.launch {
-            val user = BaseRepository.fetchSingle<User>("profile", "id", userId)
+            val user = fetchUserWithRetry(userId)
             cachedUser = user
             withContext(Dispatchers.Main) { callback(user) }
         }
+    }
+
+    private suspend fun fetchUserWithRetry(userId: String): User? {
+        val maxAttempts = 5
+        val retryDelayMs = 250L
+
+        repeat(maxAttempts) { attempt ->
+            val user = BaseRepository.fetchSingle<User>("profile", "id", userId)
+            if (user != null && user.id.isNotBlank()) {
+                return user
+            }
+            if (attempt < maxAttempts - 1) {
+                delay(retryDelayMs)
+            }
+        }
+        return null
     }
 }

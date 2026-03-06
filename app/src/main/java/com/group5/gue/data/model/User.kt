@@ -7,7 +7,7 @@ import kotlinx.serialization.SerialName
 data class User (
     val id: String = "",
     @SerialName("display_name")
-    val name: String = "",
+    val name: String? = null,
     val score: Int = 0,
     @SerialName("is_admin")
     val isAdmin: Boolean = false,
