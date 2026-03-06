@@ -9,9 +9,6 @@ import android.net.Uri;
 import android.provider.CalendarContract;
 import android.util.Log;
 
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-
 import java.util.ArrayList;
 
 public class CalendarHandler {
@@ -51,9 +48,9 @@ public class CalendarHandler {
         return calendarList;
     }
 
-    public ArrayList<String> fetchEvents() {
+    public ArrayList<Event> fetchEvents() {
 
-        ArrayList<String> eventList = new ArrayList<>();
+        ArrayList<Event> eventList = new ArrayList<>();
         if (calendarName != null) {
             Uri uri = CalendarContract.Events.CONTENT_URI;
 
@@ -71,15 +68,16 @@ public class CalendarHandler {
                 cursor = contentResolver.query(uri, EVENT_PROJECTION, selection, selectionArgs, null);
 
                 while (cursor.moveToNext()) {
+                    Event event = new Event();
 
-                    String eventTitle = cursor.getString(1);
-                    Long eventStart = cursor.getLong(2);
-                    Long eventEnd = cursor.getLong(3);
+                    event.title = cursor.getString(1);
+                    event.startTime = cursor.getLong(2);
+                    event.endTime = cursor.getLong(3);
 
-    //                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm");
+                    //                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm");
                     DateFormat formatter = SimpleDateFormat.getDateTimeInstance();
 
-                    eventList.add(eventTitle + " " + formatter.format(eventStart) + " " + formatter.format(eventEnd) + "\n\n");
+                    eventList.add(event);
                 }
             } catch (Exception e) {
                 Log.d("calendar", Log.getStackTraceString(e));
@@ -88,7 +86,70 @@ public class CalendarHandler {
         return eventList;
     }
 
-    public void setCalendar(String calendarName) {
+
+    public ArrayList<Event> getOngoingEvent() {
+
+        ArrayList<Event> eventList = new ArrayList<>();
+        if (calendarName != null) {
+            Uri uri = CalendarContract.Events.CONTENT_URI;
+
+            String[] EVENT_PROJECTION = new String[]{
+                    CalendarContract.Events.CALENDAR_DISPLAY_NAME,
+                    CalendarContract.Events.TITLE,
+                    CalendarContract.Events.DTSTART,
+                    CalendarContract.Events.DTEND,
+                    CalendarContract.Events.EVENT_LOCATION
+            };
+
+            String selection = "((" +
+                    CalendarContract.Calendars.CALENDAR_DISPLAY_NAME + " = ? AND " +
+                    CalendarContract.Events.DTSTART + " <= ? AND " +
+                    CalendarContract.Events.DTEND + " >= ? ))";
+
+            String[] selectionArgs = new String[]{
+                    this.calendarName,
+                    String.valueOf(System.currentTimeMillis()),
+                    String.valueOf(System.currentTimeMillis())};
+
+            try {
+                cursor = contentResolver.query(uri, EVENT_PROJECTION, selection, selectionArgs, null);
+
+                while (cursor.moveToNext()) {
+                    Event event = new Event();
+
+                    event.title = cursor.getString(1);
+                    event.startTime = cursor.getLong(2);
+                    event.endTime = cursor.getLong(3);
+                    event.location = cursor.getString(4);
+
+                    eventList.add(event);
+                }
+            } catch (Exception e) {
+                Log.d("calendar", Log.getStackTraceString(e));
+            }
+        }
+        return eventList;
+    }
+
+    void setCalendar(String calendarName) {
         this.calendarName = calendarName;
+    }
+
+}
+
+class Event {
+    String title;
+    long startTime;
+    long endTime;
+    String location;
+
+    @Override
+    public String toString() {
+        return "Event{" +
+                "title='" + title + '\'' +
+                ", startTime=" + startTime +
+                ", endTime=" + endTime +
+                ", location='" + location + '\'' +
+                '}';
     }
 }

@@ -94,10 +94,21 @@ public class CalendarFragment extends Fragment {
                 text.setText("");
                 finalCalendarHandler.setCalendar(spinner.getSelectedItem().toString());
 
-                ArrayList<String> events = finalCalendarHandler.fetchEvents();
+                ArrayList<Event> events = finalCalendarHandler.getOngoingEvent();
+                text.append("currently ongoing: \n");
+                if (events.size() == 0) {
+                    text.append("none");
+                } else {
+                    for (Event entry : events) {
+                        text.append(entry.toString());
+                    }
 
-                for (String entry : events) {
-                    text.append(entry);
+                }
+
+                events = finalCalendarHandler.fetchEvents();
+                text.append("\n\n all other events: \n");
+                for (Event entry : events) {
+                    text.append(entry.toString());
                 }
 
             }
