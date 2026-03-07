@@ -7,6 +7,8 @@ import com.group5.gue.data.Result;
 import com.group5.gue.data.model.Role;
 import com.group5.gue.data.model.User;
 
+import java.util.List;
+
 public class AuthRepository {
 
     private static volatile AuthRepository instance;
@@ -93,5 +95,12 @@ public class AuthRepository {
                 callback.onResult(result);
             }
         };
+    }
+
+    public void fetchFriends(java.util.function.Consumer<List<String>> callback) {
+        dataSource.getFollowedUsers(list -> {
+            callback.accept(list);
+            return null;
+        });
     }
 }

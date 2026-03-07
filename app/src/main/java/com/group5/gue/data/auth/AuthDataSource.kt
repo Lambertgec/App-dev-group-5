@@ -14,7 +14,11 @@ import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.createSupabaseClient
-import io.github.jan.supabase.auth.AuthConfig
+import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Columns
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -28,6 +32,19 @@ private const val SUPABASE_URL = "https://wvcpjygatizwlusdgwno.supabase.co"
 private const val SUPABASE_KEY = "sb_publishable_p5UsVza2oMOi-P2jGDX3xg_7GtMduWT"
 private const val GOOGLE_CLIENT_ID = "169457876103-h5ap7v1s8tbbghhuqpe5gdajk8adomah.apps.googleusercontent.com"
 
+// De-serialize Supabase JSON display_name
+@Serializable
+data class Profile(
+    @SerialName("display_name") val displayName: String
+)
+
+// De-serialize Supabase JSON follower_id
+@Serializable
+data class FollowEntry(
+    @SerialName("follower_id") val followerID: String,
+    val profile: Profile? = null
+)
+
 class AuthDataSource(
     private val context: Context
 ) {
@@ -38,6 +55,7 @@ class AuthDataSource(
         supabaseKey = SUPABASE_KEY
     ) {
         install(Auth)
+        install(Postgrest)
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -173,6 +191,37 @@ class AuthDataSource(
             }
             withContext(Dispatchers.Main) {
                 callback.onResult(userId)
+            }
+        }
+    }
+
+    // Fetch friends from Supabase
+    // Returns list of friends of cached (signed in) user
+    // Joins follow and profile tables on follower_id and filters for current user
+    fun getFollowedUsers(callback: (List<String>) -> Unit) {
+        val currentUserId = getCachedUserId()
+        if (currentUserId == null) {
+            callback(emptyList())
+            return
+        }
+        scope.launch {
+            val friends = try {
+                val response = supabase.postgrest["follow"].select(
+                    Columns.raw("follower_id, profile!follower_id(display_name)")
+                ) {
+                    filter {
+                        eq("user_id", currentUserId)
+                    }
+                }
+
+                val entries = response.decodeList<FollowEntry>()
+                entries.mapNotNull { it.profile?.displayName }
+
+            } catch (e: Exception) {
+                emptyList()
+            }
+            withContext(Dispatchers.Main) {
+                callback(friends)
             }
         }
     }
