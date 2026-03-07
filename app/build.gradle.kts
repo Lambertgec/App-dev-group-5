@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    kotlin("plugin.serialization") version "2.0.21"
 }
 
 android {
@@ -53,7 +54,8 @@ dependencies {
 
     implementation(platform(libs.supabase.bom))
     implementation(libs.auth.kt)
-
+    implementation(libs.postgrest.kt)
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
     implementation(libs.ktor.client.okhttp)
     implementation(libs.kotlinx.coroutines.android)
