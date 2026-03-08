@@ -197,7 +197,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             return;
         }
 
-        ArrayList<Event> upcoming = calendarHandler.fetchEvents();
+        ArrayList<Event> upcoming = calendarHandler.getAllEvents();
 
         // debugging code
         Log.d("MAP_DEBUG", "Upcoming events count: " + upcoming.size());

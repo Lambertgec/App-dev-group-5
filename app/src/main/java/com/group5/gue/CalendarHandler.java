@@ -3,12 +3,15 @@ package com.group5.gue;
 import android.app.Activity;
 import android.content.ContentResolver;
 import android.database.Cursor;
-import android.icu.text.DateFormat;
-import android.icu.text.SimpleDateFormat;
 import android.net.Uri;
 import android.provider.CalendarContract;
 import android.util.Log;
 
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
 public class CalendarHandler {
@@ -50,46 +53,47 @@ public class CalendarHandler {
         return calendarList;
     }
 
-    public ArrayList<Event> fetchEvents() {
+    public ArrayList<Event> getAllEvents() {
+        String selection =
+                CalendarContract.Calendars.CALENDAR_DISPLAY_NAME + " = ?";
 
-        ArrayList<Event> eventList = new ArrayList<>();
-        if (calendarName != null) {
-            Uri uri = CalendarContract.Events.CONTENT_URI;
+        String[] selectionArgs = new String[] {
+                this.calendarName};
 
-            String[] EVENT_PROJECTION = new String[] {
-                    CalendarContract.Events.CALENDAR_DISPLAY_NAME,
-                    CalendarContract.Events.TITLE,
-                    CalendarContract.Events.DTSTART,
-                    CalendarContract.Events.DTEND
-            };
-
-            String selection = "((" + CalendarContract.Calendars.CALENDAR_DISPLAY_NAME + " = ?))";
-            String[] selectionArgs = new String[] {this.calendarName};
-
-            try {
-                cursor = contentResolver.query(uri, EVENT_PROJECTION, selection, selectionArgs, null);
-
-                while (cursor.moveToNext()) {
-                    Event event = new Event();
-
-                    event.title = cursor.getString(1);
-                    event.startTime = cursor.getLong(2);
-                    event.endTime = cursor.getLong(3);
-
-                    //                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm");
-                    DateFormat formatter = SimpleDateFormat.getDateTimeInstance();
-
-                    eventList.add(event);
-                }
-            } catch (Exception e) {
-                Log.d("calendar", Log.getStackTraceString(e));
-            }
-        }
-        return eventList;
+        return submitQuery(selection, selectionArgs);
     }
 
 
     public ArrayList<Event> getOngoingEvent() {
+        String selection =
+                CalendarContract.Calendars.CALENDAR_DISPLAY_NAME + " = ? AND " +
+                CalendarContract.Events.DTSTART + " <= ? AND " +
+                CalendarContract.Events.DTEND + " >= ?";
+
+        String[] selectionArgs = new String[]{
+                this.calendarName,
+                String.valueOf(System.currentTimeMillis()),
+                String.valueOf(System.currentTimeMillis())};
+
+        return submitQuery(selection, selectionArgs);
+    }
+
+
+    public ArrayList<Event> getDay(Long startOfDay) {
+        String selection =
+                CalendarContract.Calendars.CALENDAR_DISPLAY_NAME + " = ? AND " +
+                        CalendarContract.Events.DTSTART + " <= ? AND " +
+                        CalendarContract.Events.DTEND + " >= ?";
+
+        String[] selectionArgs = new String[]{
+                this.calendarName,
+                String.valueOf(startOfDay),
+                String.valueOf(startOfDay + 86400000)};
+
+        return submitQuery(selection, selectionArgs);
+    }
+
+    private ArrayList<Event> submitQuery(String query, String[] args) {
 
         ArrayList<Event> eventList = new ArrayList<>();
         if (calendarName != null) {
@@ -103,18 +107,8 @@ public class CalendarHandler {
                     CalendarContract.Events.EVENT_LOCATION
             };
 
-            String selection = "((" +
-                    CalendarContract.Calendars.CALENDAR_DISPLAY_NAME + " = ? AND " +
-                    CalendarContract.Events.DTSTART + " <= ? AND " +
-                    CalendarContract.Events.DTEND + " >= ? ))";
-
-            String[] selectionArgs = new String[]{
-                    this.calendarName,
-                    String.valueOf(System.currentTimeMillis()),
-                    String.valueOf(System.currentTimeMillis())};
-
             try {
-                cursor = contentResolver.query(uri, EVENT_PROJECTION, selection, selectionArgs, null);
+                cursor = contentResolver.query(uri, EVENT_PROJECTION, query, args, null);
 
                 while (cursor.moveToNext()) {
                     Event event = new Event();
