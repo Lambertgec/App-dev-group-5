@@ -9,10 +9,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 
 /**
@@ -21,6 +24,11 @@ import java.util.ArrayList;
  * create an instance of this fragment.
  */
 public class CalendarFragment extends Fragment {
+
+    private static final Logger log = LoggerFactory.getLogger(CalendarFragment.class);
+    private long daySelection = System.currentTimeMillis() - (System.currentTimeMillis() % 86400000);
+
+    private CalendarHandler calendarHandler = null;
 
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -68,17 +76,13 @@ public class CalendarFragment extends Fragment {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_calendar, container, false);
 
-        TextView text = v.findViewById(R.id.textView);
-        Button button = v.findViewById(R.id.calendarButton);
+        View datePicker = v.findViewById(R.id.SectionDatePicker);
+        datePicker.setVisibility(View.INVISIBLE);
+
         Spinner spinner = v.findViewById(R.id.calendarPicker);
 
 //        fetch calendars
-        CalendarHandler calendarHandler = null;
-        try {
-            calendarHandler = new CalendarHandler(requireActivity());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        calendarHandler = new CalendarHandler(requireActivity());
         ArrayList<String> cals = calendarHandler.getCalendars();
 
 //        populate spinner with users calendars
@@ -87,32 +91,87 @@ public class CalendarFragment extends Fragment {
         adapter.setDropDownViewResource( android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
 
-        CalendarHandler finalCalendarHandler = calendarHandler;
-        button.setOnClickListener(new View.OnClickListener() {
+
+        v.findViewById(R.id.calendarButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                text.setText("");
-                finalCalendarHandler.setCalendar(spinner.getSelectedItem().toString());
+                setCalendar();
+            }
+        });
 
-                ArrayList<Event> events = finalCalendarHandler.getOngoingEvent();
-                text.append("currently ongoing: \n");
-                if (events.size() == 0) {
-                    text.append("none");
-                } else {
-                    for (Event entry : events) {
-                        text.append(entry.toString());
-                    }
+        v.findViewById(R.id.previousDayButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dayPrev();
+            }
+        });
 
-                }
+        v.findViewById(R.id.nextDayButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dayNext();
+            }
+        });
 
-                events = finalCalendarHandler.fetchEvents();
-                text.append("\n\n all other events: \n");
-                for (Event entry : events) {
-                    text.append(entry.toString());
-                }
-
+        v.findViewById(R.id.dayText).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                resetTime();
             }
         });
         return v;
     }
+
+    private void setCalendar() {
+
+        Spinner spinner = getActivity().findViewById(R.id.calendarPicker);
+        calendarHandler.setCalendar(spinner.getSelectedItem().toString());
+
+        ArrayList<Event> events = calendarHandler.getAllEvents();
+        Log.d("calendar", "onClick: ");
+        populateView(events);
+        TextView dayText = getActivity().findViewById(R.id.dayText);
+        dayText.setText("all time");
+
+        View datePicker = getActivity().findViewById(R.id.SectionDatePicker);
+        datePicker.setVisibility(View.VISIBLE);
+
+    }
+
+    private void dayNext() {
+        daySelection += 86400000;
+        populateView(calendarHandler.getDay(daySelection));
+    }
+
+    private void dayPrev() {
+        daySelection -= 86400000;
+        populateView(calendarHandler.getDay(daySelection));
+    }
+
+    private void resetTime() {
+        daySelection = System.currentTimeMillis() - (System.currentTimeMillis() % 86400000);
+        populateView(calendarHandler.getAllEvents());
+        TextView dayDisplay = getActivity().findViewById(R.id.dayText);
+        dayDisplay.setText("all time");
+    }
+
+    private void populateView(ArrayList<Event> events) {
+
+        TextView dayDisplay = getActivity().findViewById(R.id.dayText);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM");
+        dayDisplay.setText(dateFormat.format(daySelection));
+
+
+        TextView text = getActivity().findViewById(R.id.textView);
+        text.setText("");
+        if (events.isEmpty()) {
+            text.append("none");
+        } else {
+            for (Event entry : events) {
+                text.append(entry.toString()+"\n");
+            }
+        }
+
+    }
+
 }

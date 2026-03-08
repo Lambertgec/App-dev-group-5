@@ -3,12 +3,15 @@ package com.group5.gue;
 import android.app.Activity;
 import android.content.ContentResolver;
 import android.database.Cursor;
-import android.icu.text.DateFormat;
-import android.icu.text.SimpleDateFormat;
 import android.net.Uri;
 import android.provider.CalendarContract;
 import android.util.Log;
 
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
 public class CalendarHandler {
@@ -48,7 +51,7 @@ public class CalendarHandler {
         return calendarList;
     }
 
-    public ArrayList<Event> fetchEvents() {
+    public ArrayList<Event> getAllEvents() {
         String selection =
                 CalendarContract.Calendars.CALENDAR_DISPLAY_NAME + " = ?";
 
@@ -69,6 +72,21 @@ public class CalendarHandler {
                 this.calendarName,
                 String.valueOf(System.currentTimeMillis()),
                 String.valueOf(System.currentTimeMillis())};
+
+        return submitQuery(selection, selectionArgs);
+    }
+
+
+    public ArrayList<Event> getDay(Long startOfDay) {
+        String selection =
+                CalendarContract.Calendars.CALENDAR_DISPLAY_NAME + " = ? AND " +
+                        CalendarContract.Events.DTSTART + " <= ? AND " +
+                        CalendarContract.Events.DTEND + " >= ?";
+
+        String[] selectionArgs = new String[]{
+                this.calendarName,
+                String.valueOf(startOfDay),
+                String.valueOf(startOfDay + 86400000)};
 
         return submitQuery(selection, selectionArgs);
     }
