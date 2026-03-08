@@ -92,9 +92,13 @@ public class CalendarFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 text.setText("");
+
+                CalendarHandler.selectedCalendar = spinner.getSelectedItem().toString();
+
                 finalCalendarHandler.setCalendar(spinner.getSelectedItem().toString());
 
                 ArrayList<Event> events = finalCalendarHandler.getOngoingEvent();
+
                 text.append("currently ongoing: \n");
                 if (events.size() == 0) {
                     text.append("none");

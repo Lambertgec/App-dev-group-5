@@ -4,6 +4,7 @@ import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,6 +28,9 @@ import androidx.core.content.ContextCompat;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import android.widget.Button;
+import android.widget.TextView;
+
+import java.util.ArrayList;
 
 
 /**
@@ -37,6 +41,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private FusedLocationProviderClient fusedLocationClient;
     private static final int LOCATION_PERMISSION_REQUEST = 1;
     LatLng tueCampus = new LatLng(51.448, 5.489);
+    private TextView eventBar;
+    private CalendarHandler calendarHandler;
 
 
     public MapFragment() {
@@ -62,6 +68,20 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
         Button btnCenterTue = view.findViewById(R.id.btn_center_tue);
 
+        // Displays the even bar at the top of the fragment
+        eventBar = view.findViewById(R.id.event_bar);
+        try {
+            calendarHandler = new CalendarHandler(requireActivity());
+
+            if (CalendarHandler.selectedCalendar != null) {
+                calendarHandler.setCalendar(CalendarHandler.selectedCalendar);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        updateEventBar();
+
+        //Displays the map
         SupportMapFragment mapFragment =
                 (SupportMapFragment) getChildFragmentManager()
                         .findFragmentById(R.id.map);
@@ -146,4 +166,53 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             }
         }
     }
+
+    /**
+     * Updates the message displayed in the event bar at the top of the map.
+     *
+     * The method checks the user's calendar (via CalendarHandler) to determine:
+     * 1. If there is an event currently ongoing.
+     * 2. If there is an upcoming event starting soon.
+     * 3. If there are no relevant events.
+     *
+     * Based on this information, the text in the event bar is updated to inform
+     * the user where their lecture/event is happening or that there are no
+     * upcoming events within the checked time window.
+     *
+     * If the calendar cannot be accessed (e.g., permission not granted or
+     * CalendarHandler not initialized), the user is prompted to give calendar
+     * permission so the app can show the building of upcoming lectures.
+     */
+    private void updateEventBar() {
+        if (calendarHandler == null) {
+            eventBar.setText("Give permission to your calendar to display a building for a lecture starting soon");
+            return;
+        }
+
+        ArrayList<Event> ongoingEvents = calendarHandler.getOngoingEvent();
+
+        if (ongoingEvents.size() > 0) {
+            Event e = ongoingEvents.get(0);
+            eventBar.setText("The event is happening at " + e.getLocation());
+            return;
+        }
+
+        ArrayList<Event> upcoming = calendarHandler.fetchEvents();
+
+        // debugging code
+        Log.d("MAP_DEBUG", "Upcoming events count: " + upcoming.size());
+        for (Event e : upcoming) {
+            Log.d("MAP_DEBUG", "Event -> " + e.toString());
+        }
+
+        // TODO: add check for event happening in an hour
+        if (upcoming.size() > 0) {
+            Event e = upcoming.get(0);
+            eventBar.setText("There is an event starting soon at " + e.getLocation());
+        } else {
+            eventBar.setText("There is no event in an hour");
+        }
+    }
+
+    // TODO: add building marking for the lecture happening soon.
 }

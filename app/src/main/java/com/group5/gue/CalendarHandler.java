@@ -16,6 +16,7 @@ public class CalendarHandler {
 
     private String calendarName;
     private final ContentResolver contentResolver;
+    public static String selectedCalendar = null;
 
     public CalendarHandler(Activity activity) {
         this.contentResolver = activity.getContentResolver();
@@ -45,6 +46,7 @@ public class CalendarHandler {
 
             calendarList.add(displayName);
         }
+
         return calendarList;
     }
 
@@ -151,5 +153,13 @@ class Event {
                 ", endTime=" + endTime +
                 ", location='" + location + '\'' +
                 '}';
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public long getStartTime() {
+        return startTime;
     }
 }
