@@ -55,7 +55,7 @@ public class CalendarHandler {
 
     public ArrayList<Event> getAllEvents() {
         String selection =
-                CalendarContract.Calendars.CALENDAR_DISPLAY_NAME + " = ?";
+                CalendarContract.Events.CALENDAR_DISPLAY_NAME + " = ?";
 
         String[] selectionArgs = new String[] {
                 this.calendarName};
@@ -66,7 +66,7 @@ public class CalendarHandler {
 
     public ArrayList<Event> getOngoingEvent() {
         String selection =
-                CalendarContract.Calendars.CALENDAR_DISPLAY_NAME + " = ? AND " +
+                CalendarContract.Events.CALENDAR_DISPLAY_NAME + " = ? AND " +
                 CalendarContract.Events.DTSTART + " <= ? AND " +
                 CalendarContract.Events.DTEND + " >= ?";
 
@@ -80,7 +80,7 @@ public class CalendarHandler {
 
     public ArrayList<Event> getStartingSoon() {
         String selection =
-                CalendarContract.Calendars.CALENDAR_DISPLAY_NAME + " = ? AND " +
+                CalendarContract.Events.CALENDAR_DISPLAY_NAME + " = ? AND " +
                         CalendarContract.Events.DTSTART + " >= ? AND " +
                         CalendarContract.Events.DTSTART + " <= ?";
 
@@ -97,7 +97,7 @@ public class CalendarHandler {
 
     public ArrayList<Event> getDay(Long startOfDay) {
         String selection =
-                CalendarContract.Calendars.CALENDAR_DISPLAY_NAME + " = ? AND " +
+                CalendarContract.Events.CALENDAR_DISPLAY_NAME + " = ? AND " +
                         CalendarContract.Events.DTSTART + " <= ? AND " +
                         CalendarContract.Events.DTEND + " >= ?";
 
