@@ -31,6 +31,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Objects;
 
 
 /**
@@ -104,7 +105,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
         try {
             mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(
-                    getContext(), R.raw.map_style));
+                    requireContext(), R.raw.map_style));
         } catch (Resources.NotFoundException e) {
             e.printStackTrace();
         }
@@ -125,7 +126,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(tueCampus, 16f));
 
         // Adding markers to the Map
-        // TODO: get the exact coordinates from database + additional info + add more buildings
+        // TODO: get the exact coordinates from database + additional info
+        // TODO: add more buildings
         LatLng metaforum = new LatLng(51.447868, 5.487455);
         LatLng atlas = new LatLng(51.44784, 5.48605);
         LatLng auditorium = new LatLng(51.447910, 5.484945);
@@ -169,48 +171,39 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     /**
      * Updates the message displayed in the event bar at the top of the map.
-     *
      * The method checks the user's calendar (via CalendarHandler) to determine:
      * 1. If there is an event currently ongoing.
      * 2. If there is an upcoming event starting soon.
      * 3. If there are no relevant events.
-     *
      * Based on this information, the text in the event bar is updated to inform
      * the user where their lecture/event is happening or that there are no
      * upcoming events within the checked time window.
-     *
      * If the calendar cannot be accessed (e.g., permission not granted or
      * CalendarHandler not initialized), the user is prompted to give calendar
      * permission so the app can show the building of upcoming lectures.
      */
     private void updateEventBar() {
         if (calendarHandler == null) {
-            eventBar.setText("Give permission to your calendar to display a building for a lecture starting soon");
+            eventBar.setText(getString(R.string.calendar_permission_message));
             return;
         }
 
         ArrayList<Event> ongoingEvents = calendarHandler.getOngoingEvent();
 
-        if (ongoingEvents.size() > 0) {
+        if (!ongoingEvents.isEmpty()) {
             Event e = ongoingEvents.get(0);
-            eventBar.setText("The event is happening at " + e.getLocation());
+            eventBar.setText(getString(R.string.event_happening, e.getLocation()));
             return;
         }
 
+        // Checks for events happening in 1 hour
         ArrayList<Event> upcoming = calendarHandler.getStartingSoon();
 
-        // debugging code
-        Log.d("MAP_DEBUG", "Upcoming events count: " + upcoming.size());
-        for (Event e : upcoming) {
-            Log.d("MAP_DEBUG", "Event -> " + e.toString());
-        }
-
-        // TODO: add check for event happening in an hour
-        if (upcoming.size() > 0) {
+        if (!upcoming.isEmpty()) {
             Event e = upcoming.get(0);
-            eventBar.setText("There is an event starting soon at " + e.getLocation());
+            eventBar.setText(getString(R.string.event_starting_soon, e.getLocation()));
         } else {
-            eventBar.setText("There is no event in an hour");
+            eventBar.setText(R.string.no_event_soon);
         }
     }
 
