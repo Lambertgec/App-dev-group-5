@@ -11,12 +11,15 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.group5.gue.blocking.AppBlockingManager;
+import com.group5.gue.data.PermissionHandler;
 import com.group5.gue.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity {
 
 
     ActivityMainBinding binding;
+    private AppBlockingManager blockingManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,7 +47,31 @@ public class MainActivity extends AppCompatActivity {
            }
            return true;
         });
+
+        // Initialize App Blocking
+        initAppBlocking();
     }
+
+    private void initAppBlocking() {
+        blockingManager = new AppBlockingManager(this);
+
+        PermissionHandler permissionHandler = new PermissionHandler(this);
+        permissionHandler.requestAppBlocking();
+
+        // default block
+        blockingManager.addBlockedApp("com.android.chrome");
+        blockingManager.addBlockedApp("com.google.android.youtube");
+        blockingManager.addBlockedApp("app.revanced.android.youtube");
+        blockingManager.addBlockedApp("com.instagram.android");
+        blockingManager.addBlockedApp("com.facebook.katana");
+        blockingManager.addBlockedApp("com.facebook.orca");
+        blockingManager.addBlockedApp("com.facebook.lite");
+        blockingManager.addBlockedApp("com.facebook.mlite");
+        blockingManager.addBlockedApp("com.discord");
+
+        blockingManager.startBlockingService();
+    }
+
 
     private void switchFragmant(Fragment fragment){
         FragmentManager fragmentManager = getSupportFragmentManager();
