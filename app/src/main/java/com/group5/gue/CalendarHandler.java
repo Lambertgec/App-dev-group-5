@@ -78,6 +78,22 @@ public class CalendarHandler {
         return submitQuery(selection, selectionArgs);
     }
 
+    public ArrayList<Event> getStartingSoon() {
+        String selection =
+                CalendarContract.Calendars.CALENDAR_DISPLAY_NAME + " = ? AND " +
+                        CalendarContract.Events.DTSTART + " >= ? AND " +
+                        CalendarContract.Events.DTSTART + " <= ?";
+
+        Long timeNow = System.currentTimeMillis();
+
+        String[] selectionArgs = new String[]{
+                this.calendarName,
+                String.valueOf(timeNow),
+                String.valueOf(timeNow + 3600000)};
+
+        return submitQuery(selection, selectionArgs);
+    }
+
 
     public ArrayList<Event> getDay(Long startOfDay) {
         String selection =
