@@ -17,4 +17,12 @@
         There is an event starting soon at %1$s
     </string>
     <string name="no_event_soon"> There is no event in an hour </string>
+
+    <!-- Preferences -->
+    <string name="blocking">Block distractions</string>
+    <string name="preferences">Settings</string>
+    <string name="blocking_extra">Social media and other disctacting apps will be blocked</string>
+    <string name="title_activity_settings">Settings</string>
+
+
 </resources>

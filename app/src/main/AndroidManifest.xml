@@ -13,6 +13,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.GUE">
         <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:label="@string/title_activity_settings" />
+        <activity
             android:name=".ui.login.launcher.LauncherActivity"
             android:exported="true"
             android:label="@string/title_activity_launcher"
