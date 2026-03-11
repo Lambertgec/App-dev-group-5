@@ -16,6 +16,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.group5.gue.MainActivity;
 import com.group5.gue.R;
 import com.group5.gue.data.Result;
 import com.group5.gue.data.auth.AuthRepository;
@@ -95,6 +96,17 @@ public class LoginActivity extends AppCompatActivity {
                 });
             }
         });
+
+        final Button signupButton = binding.signUp;
+        signupButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(LoginActivity.this, MainActivity.class));
+                setResult(Activity.RESULT_OK);
+                finish();
+            }
+        });
+
     }
 
     private void signInWithEmail(String email, String password, ProgressBar loadingProgressBar) {

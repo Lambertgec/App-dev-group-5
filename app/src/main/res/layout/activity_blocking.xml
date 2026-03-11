@@ -32,7 +32,6 @@
             android:layout_marginBottom="24dp"
             android:text="@string/blocking_message"
             android:textAlignment="center"
-            android:textColor="@color/text_secondary"
             android:textSize="16sp" />
 
         <Button
