@@ -13,4 +13,12 @@
     <string name="blocking_title">Blocked</string>
     <string name="blocking_message">This app is blocked. Please return to your current activity.</string>
     <string name="blocking_dismiss_button">Back</string>
+
+    <!-- Preferences -->
+    <string name="blocking">Block distractions</string>
+    <string name="preferences">Settings</string>
+    <string name="blocking_extra">Social media and other disctacting apps will be blocked</string>
+    <string name="title_activity_settings">Settings</string>
+
+
 </resources>

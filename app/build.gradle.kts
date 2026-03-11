@@ -69,6 +69,8 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation("com.google.android.gms:play-services-maps:20.0.0")
     implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation(libs.androidx.recyclerview)
+    implementation(libs.androidx.preference)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

@@ -1,8 +1,10 @@
 package com.group5.gue;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
+import android.view.MenuItem;
 
 import androidx.appcompat.widget.Toolbar;
 
@@ -60,6 +62,16 @@ public class MainActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater menuInflater = new MenuInflater(this);
         menuInflater.inflate(R.menu.top_menu, menu);
+
+        MenuItem setting = menu.findItem(R.id.setting);
+        setting.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+                startActivity(intent);
+                return true;
+            }
+        });
         // Initialize App Blocking
         initAppBlocking();
         return true;
