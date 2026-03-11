@@ -6,7 +6,6 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
 import android.view.LayoutInflater;
@@ -74,6 +73,7 @@ public class HomeFragment extends Fragment {
 
         Button showCalendarButton = v.findViewById(R.id.showCalendarButton);
         showCalendarButton.setVisibility(View.INVISIBLE);
+
         return  v;
     }
 
@@ -90,23 +90,6 @@ public class HomeFragment extends Fragment {
             });
         });
 
-        Button collectiblesButton = view.findViewById(R.id.collectiblesButton);
-        //collectiblesButton.setVisibility(View.VISIBLE);
-        FragmentTransaction tr = getChildFragmentManager().beginTransaction();
-        //tr.replace(R.id.full_view, new CollectFragment()).commit();
-        Fragment collectFragment = new CollectFragment();
-        tr.add(R.id.full_view, collectFragment).hide(collectFragment).commit();
-
-        collectiblesButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                FragmentTransaction transaction = getChildFragmentManager().beginTransaction();
-                //transaction.replace(R.id.full_view, new CollectFragment()).commit();
-                //transaction.add(R.id.full_view, new CollectFragment()).commit();
-                transaction.show(collectFragment).commit();
-
-            }
-        });
 //        add calendar if has permission, else request it
         PermissionHandler permissionHandler = new PermissionHandler(requireActivity());
         if (permissionHandler.checkPermission(Manifest.permission.READ_CALENDAR)) {
