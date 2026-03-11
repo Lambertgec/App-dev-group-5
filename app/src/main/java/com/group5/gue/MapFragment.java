@@ -5,6 +5,7 @@ import android.os.Bundle;
 import androidx.fragment.app.Fragment;
 
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +19,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import android.content.res.Resources;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 
@@ -28,9 +30,20 @@ import androidx.core.content.ContextCompat;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
+import android.app.AlertDialog;
 
 import java.util.ArrayList;
+
+import com.group5.gue.data.auth.AuthRepository;
+import com.group5.gue.data.model.User;
+import com.group5.gue.data.model.Role;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
 import java.util.Objects;
 
 
@@ -44,6 +57,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     LatLng tueCampus = new LatLng(51.448, 5.489);
     private TextView eventBar;
     private CalendarHandler calendarHandler;
+    
+    // Admin state
+    private boolean isAddingMarker = false;
+    private Snackbar instructionSnackbar;
 
 
     public MapFragment() {
@@ -81,6 +98,36 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             e.printStackTrace();
         }
         updateEventBar();
+
+        // Role check
+        FloatingActionButton addAnnotationBtn = view.findViewById(R.id.add_annotation);
+
+        User user = AuthRepository.getInstance(requireContext()).getCachedUser();
+        // Check for ADMIN role
+        if (user != null && user.getRole() == Role.USER) {
+            // TODO: change to admin
+            addAnnotationBtn.setVisibility(View.VISIBLE);
+            addAnnotationBtn.setOnClickListener(v -> {
+                isAddingMarker = true;
+                // Use a Snackbar that stays until dismissed
+                instructionSnackbar = Snackbar.make(view, "Tap on the map to place a marker", Snackbar.LENGTH_INDEFINITE);
+                
+                // Position Snackbar at the top
+                View snackbarView = instructionSnackbar.getView();
+                FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) snackbarView.getLayoutParams();
+                params.gravity = Gravity.TOP;
+                params.topMargin = 150; 
+                snackbarView.setLayoutParams(params);
+
+                instructionSnackbar.setAction("Cancel", v1 -> {
+                    isAddingMarker = false;
+                    instructionSnackbar.dismiss();
+                });
+                instructionSnackbar.show();
+            });
+        } else {
+            addAnnotationBtn.setVisibility(View.GONE);
+        }
 
         //Displays the map
         SupportMapFragment mapFragment =
@@ -125,7 +172,110 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(tueCampus, 16f));
 
+        // Set custom info window
+        mMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
+            @Nullable
+            @Override
+            public View getInfoContents(@NonNull Marker marker) {
+                return null;
+            }
+
+            @Nullable
+            @Override
+            public View getInfoWindow(@NonNull Marker marker) {
+                View window = getLayoutInflater().inflate(R.layout.custom_info_window, null);
+                
+                TextView title = window.findViewById(R.id.info_window_title);
+                TextView snippet = window.findViewById(R.id.info_window_snippet);
+                ImageView deleteIcon = window.findViewById(R.id.delete);
+
+                title.setText(marker.getTitle());
+                snippet.setText(marker.getSnippet());
+
+                // Show 'x' only for admins
+                User user = AuthRepository.getInstance(requireContext()).getCachedUser();
+                if (user != null && user.getRole() == Role.USER) {
+                    // TODO: change to admin
+                    deleteIcon.setVisibility(View.VISIBLE);
+                } else {
+                    deleteIcon.setVisibility(View.GONE);
+                }
+
+                return window;
+            }
+        });
+
+        // Adding listeners for Admin actions
+        setupAdminListeners();
+
         // Adding markers to the Map
+        loadMarkers();
+    }
+
+    private void setupAdminListeners() {
+        mMap.setOnMapClickListener(latLng -> {
+            if (isAddingMarker) {
+                // Dismiss the instruction when location is chosen
+                if (instructionSnackbar != null) {
+                    instructionSnackbar.dismiss();
+                }
+                showAddMarkerDialog(latLng);
+                isAddingMarker = false;
+            }
+        });
+
+        // Delete logic: Click a marker's info window to delete it (Admin only)
+        mMap.setOnInfoWindowClickListener(marker -> {
+            User user = AuthRepository.getInstance(requireContext()).getCachedUser();
+            if (user != null && user.getRole() == Role.USER) {
+                //TODO: change admin
+                new AlertDialog.Builder(getContext())
+                        .setTitle("Delete Location")
+                        .setMessage("Are you sure you want to delete " + marker.getTitle() + "?")
+                        .setPositiveButton("Delete", (dialog, which) -> {
+                            // TODO: Call Supabase delete logic here
+                            marker.remove();
+                            Toast.makeText(getContext(), "Marker removed", Toast.LENGTH_SHORT).show();
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            }
+        });
+    }
+
+    private void showAddMarkerDialog(LatLng latLng) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle("Add New Location");
+
+        View viewInflated = LayoutInflater.from(getContext()).inflate(R.layout.dialog_add_marker, (ViewGroup) getView(), false);
+        final EditText inputName = viewInflated.findViewById(R.id.input_building_name);
+        final EditText inputSnippet = viewInflated.findViewById(R.id.input_building_snippet);
+
+        builder.setView(viewInflated);
+
+        builder.setPositiveButton("Save", (dialog, which) -> {
+            String name = inputName.getText().toString();
+            String snippet = inputSnippet.getText().toString();
+            
+            if (!name.isEmpty()) {
+                mMap.addMarker(new MarkerOptions()
+                        .position(latLng)
+                        .title(name)
+                        .snippet(snippet)
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
+                
+                // TODO: Save to Supabase
+                Log.d("MAP_ADMIN", "Saving " + name + " at " + latLng.toString());
+                Toast.makeText(getContext(), name + " added successfully", Toast.LENGTH_SHORT).show();
+            }
+        });
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+
+        builder.show();
+    }
+
+    private void loadMarkers() {
+        // These are your default markers
         // TODO: get the exact coordinates from database + additional info
         // TODO: add more buildings
         LatLng metaforum = new LatLng(51.447868, 5.487455);
@@ -150,6 +300,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                         BitmapDescriptorFactory.HUE_BLUE))
                 .snippet("Contains most lecture rooms"));
     }
+
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String[] permissions,
