@@ -4,6 +4,8 @@ import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
 
+import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,6 +19,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import android.content.res.Resources;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 
@@ -27,57 +30,46 @@ import androidx.core.content.ContextCompat;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.TextView;
+import android.widget.Toast;
+import android.app.AlertDialog;
+
+import java.util.ArrayList;
+
+import com.group5.gue.data.auth.AuthRepository;
+import com.group5.gue.data.model.User;
+import com.group5.gue.data.model.Role;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
+import java.util.Objects;
 
 
 /**
- * A simple {@link Fragment} subclass.
- * Use the {@link MapFragment#newInstance} factory method to
- * create an instance of this fragment.
+ * A simple {@link Fragment} subclass for displaying the TU/e map with markers.
  */
 public class MapFragment extends Fragment implements OnMapReadyCallback {
     private GoogleMap mMap;
     private FusedLocationProviderClient fusedLocationClient;
     private static final int LOCATION_PERMISSION_REQUEST = 1;
     LatLng tueCampus = new LatLng(51.448, 5.489);
+    private TextView eventBar;
+    private CalendarHandler calendarHandler;
+    
+    // Admin state
+    private boolean isAddingMarker = false;
+    private Snackbar instructionSnackbar;
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
 
     public MapFragment() {
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment MapFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static MapFragment newInstance(String param1, String param2) {
-        MapFragment fragment = new MapFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
     }
 
     @Override
@@ -94,6 +86,50 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
         Button btnCenterTue = view.findViewById(R.id.btn_center_tue);
 
+        // Displays the even bar at the top of the fragment
+        eventBar = view.findViewById(R.id.event_bar);
+        try {
+            calendarHandler = new CalendarHandler(requireActivity());
+
+            if (CalendarHandler.selectedCalendar != null) {
+                calendarHandler.setCalendar(CalendarHandler.selectedCalendar);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        updateEventBar();
+
+        // Role check
+        FloatingActionButton addAnnotationBtn = view.findViewById(R.id.add_annotation);
+
+        User user = AuthRepository.getInstance(requireContext()).getCachedUser();
+        // Check for ADMIN role
+        if (user != null && user.getRole() == Role.USER) {
+            // TODO: change to admin
+            addAnnotationBtn.setVisibility(View.VISIBLE);
+            addAnnotationBtn.setOnClickListener(v -> {
+                isAddingMarker = true;
+                // Use a Snackbar that stays until dismissed
+                instructionSnackbar = Snackbar.make(view, "Tap on the map to place a marker", Snackbar.LENGTH_INDEFINITE);
+                
+                // Position Snackbar at the top
+                View snackbarView = instructionSnackbar.getView();
+                FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) snackbarView.getLayoutParams();
+                params.gravity = Gravity.TOP;
+                params.topMargin = 150; 
+                snackbarView.setLayoutParams(params);
+
+                instructionSnackbar.setAction("Cancel", v1 -> {
+                    isAddingMarker = false;
+                    instructionSnackbar.dismiss();
+                });
+                instructionSnackbar.show();
+            });
+        } else {
+            addAnnotationBtn.setVisibility(View.GONE);
+        }
+
+        //Displays the map
         SupportMapFragment mapFragment =
                 (SupportMapFragment) getChildFragmentManager()
                         .findFragmentById(R.id.map);
@@ -116,7 +152,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
         try {
             mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(
-                    getContext(), R.raw.map_style));
+                    requireContext(), R.raw.map_style));
         } catch (Resources.NotFoundException e) {
             e.printStackTrace();
         }
@@ -136,8 +172,112 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(tueCampus, 16f));
 
+        // Set custom info window
+        mMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
+            @Nullable
+            @Override
+            public View getInfoContents(@NonNull Marker marker) {
+                return null;
+            }
+
+            @Nullable
+            @Override
+            public View getInfoWindow(@NonNull Marker marker) {
+                View window = getLayoutInflater().inflate(R.layout.custom_info_window, null);
+                
+                TextView title = window.findViewById(R.id.info_window_title);
+                TextView snippet = window.findViewById(R.id.info_window_snippet);
+                ImageView deleteIcon = window.findViewById(R.id.delete);
+
+                title.setText(marker.getTitle());
+                snippet.setText(marker.getSnippet());
+
+                // Show 'x' only for admins
+                User user = AuthRepository.getInstance(requireContext()).getCachedUser();
+                if (user != null && user.getRole() == Role.USER) {
+                    // TODO: change to admin
+                    deleteIcon.setVisibility(View.VISIBLE);
+                } else {
+                    deleteIcon.setVisibility(View.GONE);
+                }
+
+                return window;
+            }
+        });
+
+        // Adding listeners for Admin actions
+        setupAdminListeners();
+
         // Adding markers to the Map
+        loadMarkers();
+    }
+
+    private void setupAdminListeners() {
+        mMap.setOnMapClickListener(latLng -> {
+            if (isAddingMarker) {
+                // Dismiss the instruction when location is chosen
+                if (instructionSnackbar != null) {
+                    instructionSnackbar.dismiss();
+                }
+                showAddMarkerDialog(latLng);
+                isAddingMarker = false;
+            }
+        });
+
+        // Delete logic: Click a marker's info window to delete it (Admin only)
+        mMap.setOnInfoWindowClickListener(marker -> {
+            User user = AuthRepository.getInstance(requireContext()).getCachedUser();
+            if (user != null && user.getRole() == Role.USER) {
+                //TODO: change admin
+                new AlertDialog.Builder(getContext())
+                        .setTitle("Delete Location")
+                        .setMessage("Are you sure you want to delete " + marker.getTitle() + "?")
+                        .setPositiveButton("Delete", (dialog, which) -> {
+                            // TODO: Call Supabase delete logic here
+                            marker.remove();
+                            Toast.makeText(getContext(), "Marker removed", Toast.LENGTH_SHORT).show();
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            }
+        });
+    }
+
+    private void showAddMarkerDialog(LatLng latLng) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle("Add New Location");
+
+        View viewInflated = LayoutInflater.from(getContext()).inflate(R.layout.dialog_add_marker, (ViewGroup) getView(), false);
+        final EditText inputName = viewInflated.findViewById(R.id.input_building_name);
+        final EditText inputSnippet = viewInflated.findViewById(R.id.input_building_snippet);
+
+        builder.setView(viewInflated);
+
+        builder.setPositiveButton("Save", (dialog, which) -> {
+            String name = inputName.getText().toString();
+            String snippet = inputSnippet.getText().toString();
+            
+            if (!name.isEmpty()) {
+                mMap.addMarker(new MarkerOptions()
+                        .position(latLng)
+                        .title(name)
+                        .snippet(snippet)
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
+                
+                // TODO: Save to Supabase
+                Log.d("MAP_ADMIN", "Saving " + name + " at " + latLng.toString());
+                Toast.makeText(getContext(), name + " added successfully", Toast.LENGTH_SHORT).show();
+            }
+        });
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+
+        builder.show();
+    }
+
+    private void loadMarkers() {
+        // These are your default markers
         // TODO: get the exact coordinates from database + additional info
+        // TODO: add more buildings
         LatLng metaforum = new LatLng(51.447868, 5.487455);
         LatLng atlas = new LatLng(51.44784, 5.48605);
         LatLng auditorium = new LatLng(51.447910, 5.484945);
@@ -159,8 +299,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 .icon(BitmapDescriptorFactory.defaultMarker(
                         BitmapDescriptorFactory.HUE_BLUE))
                 .snippet("Contains most lecture rooms"));
-        // TODO: add more buildings
     }
+
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String[] permissions,
@@ -179,4 +319,44 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             }
         }
     }
+
+    /**
+     * Updates the message displayed in the event bar at the top of the map.
+     * The method checks the user's calendar (via CalendarHandler) to determine:
+     * 1. If there is an event currently ongoing.
+     * 2. If there is an upcoming event starting soon.
+     * 3. If there are no relevant events.
+     * Based on this information, the text in the event bar is updated to inform
+     * the user where their lecture/event is happening or that there are no
+     * upcoming events within the checked time window.
+     * If the calendar cannot be accessed (e.g., permission not granted or
+     * CalendarHandler not initialized), the user is prompted to give calendar
+     * permission so the app can show the building of upcoming lectures.
+     */
+    private void updateEventBar() {
+        if (calendarHandler == null) {
+            eventBar.setText(getString(R.string.calendar_permission_message));
+            return;
+        }
+
+        ArrayList<Event> ongoingEvents = calendarHandler.getOngoingEvent();
+
+        if (!ongoingEvents.isEmpty()) {
+            Event e = ongoingEvents.get(0);
+            eventBar.setText(getString(R.string.event_happening, e.getLocation()));
+            return;
+        }
+
+        // Checks for events happening in 1 hour
+        ArrayList<Event> upcoming = calendarHandler.getStartingSoon();
+
+        if (!upcoming.isEmpty()) {
+            Event e = upcoming.get(0);
+            eventBar.setText(getString(R.string.event_starting_soon, e.getLocation()));
+        } else {
+            eventBar.setText(R.string.no_event_soon);
+        }
+    }
+
+    // TODO: add building marking for the lecture happening soon.
 }
