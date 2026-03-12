@@ -72,7 +72,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private TextView tvFloorLevel;
     private boolean mapReady = false;
 
-    UserRepository userRepository = UserRepository.getInstance();
+    UserRepository userRepository = UserRepository.Companion.getInstance();
     User user;
 
 
