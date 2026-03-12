@@ -1,64 +1,137 @@
 package com.group5.gue;
 
+import android.graphics.Color;
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.widget.TextView;
+import android.widget.Toast;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link FriendsFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.group5.gue.data.friends.FriendsRepository;
+import com.group5.gue.databinding.FragmentFriendsBinding;
+
+import kotlin.Unit;
+import java.util.List;
+
 public class FriendsFragment extends Fragment {
-
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    private FragmentFriendsBinding binding;
 
     public FriendsFragment() {
-        // Required empty public constructor
-    }
-
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment FriendsFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static FriendsFragment newInstance(String param1, String param2) {
-        FriendsFragment fragment = new FriendsFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_friends, container, false);
+        binding = FragmentFriendsBinding.inflate(inflater, container, false);
+        return binding.getRoot();
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        binding.friendsRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+
+        FriendsRepository friendRepository = FriendsRepository.getInstance();
+
+        refreshFriends(friendRepository);
+
+        binding.addFriendEditText.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                String username = binding.addFriendEditText.getText().toString().trim();
+                if (!username.isEmpty()) {
+                    friendRepository.addFriendByDisplayName(username, (success, message) -> {
+                        Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+                        if (success) {
+                            binding.addFriendEditText.setText("");
+                            refreshFriends(friendRepository);
+                        }
+                        return Unit.INSTANCE;
+                    });
+                }
+                return true;
+            }
+            return false;
+        });
+    }
+
+    /*
+     * Refresh the list of friends of the user currently signed in.
+     */
+    private void refreshFriends(FriendsRepository repository) {
+        repository.fetchFriends(friendsList -> {
+            if (friendsList.isEmpty()) {
+                showNoFriendsUI();
+            } else {
+                updateFriendsListUI(friendsList);
+            }
+            return Unit.INSTANCE;
+        });
+    }
+
+    /*
+     * Fill the RecyclerView with the list of friends.
+     */
+    private void updateFriendsListUI(List<String> friends) {
+        if (binding == null) return;
+        binding.emptyFriendsTextView.setVisibility(View.GONE);
+        binding.friendsRecyclerView.setVisibility(View.VISIBLE);
+
+        binding.friendsRecyclerView.setAdapter(new RecyclerView.Adapter<FriendViewHolder>() {
+            @NonNull
+            @Override
+            public FriendViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+                TextView tv = new TextView(parent.getContext());
+                tv.setTextSize(18);
+                tv.setPadding(32, 32, 32, 32);
+                tv.setTextColor(Color.WHITE);
+                tv.setLayoutParams(new ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT));
+                return new FriendViewHolder(tv);
+            }
+
+            @Override
+            public void onBindViewHolder(@NonNull FriendViewHolder holder, int position) {
+                holder.textView.setText(friends.get(position));
+            }
+
+            @Override
+            public int getItemCount() {
+                return friends.size();
+            }
+        });
+    }
+
+    /*
+     * Show a message stating no friends added yet.
+     */
+    private void showNoFriendsUI() {
+        if (binding == null) return;
+        binding.friendsRecyclerView.setVisibility(View.GONE);
+        binding.emptyFriendsTextView.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        binding = null;
+    }
+
+    static class FriendViewHolder extends RecyclerView.ViewHolder {
+        TextView textView;
+
+        FriendViewHolder(View v) {
+            super(v);
+            textView = (TextView) v;
+        }
     }
 }
