@@ -4,8 +4,6 @@ import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
 
-import android.util.Log;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,7 +17,6 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import android.content.res.Resources;
-import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.group5.gue.data.annotation.AnnotationRepository;
@@ -50,19 +47,15 @@ import com.google.android.material.snackbar.Snackbar;
 
 
 /**
- * A simple {@link Fragment} subclass for displaying the TU/e map with markers.
+ * A simple {@link Fragment} subclass.
+ * Use the {@link MapFragment#newInstance} factory method to
+ * create an instance of this fragment.
  */
 public class MapFragment extends Fragment implements OnMapReadyCallback {
     private GoogleMap mMap;
     private FusedLocationProviderClient fusedLocationClient;
     private static final int LOCATION_PERMISSION_REQUEST = 1;
     LatLng tueCampus = new LatLng(51.448, 5.489);
-    private TextView eventBar;
-    private CalendarHandler calendarHandler;
-    
-    // Admin state
-    private boolean isAddingMarker = false;
-    private Snackbar instructionSnackbar;
 
     AnnotationRepository repository = AnnotationRepository.Companion.getInstance();
     private List<Annotation> annotationList;
@@ -81,9 +74,31 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         // Required empty public constructor
     }
 
+    /**
+     * Use this factory method to create a new instance of
+     * this fragment using the provided parameters.
+     *
+     * @param param1 Parameter 1.
+     * @param param2 Parameter 2.
+     * @return A new instance of fragment MapFragment.
+     */
+    // TODO: Rename and change types and number of parameters
+    public static MapFragment newInstance(String param1, String param2) {
+        MapFragment fragment = new MapFragment();
+        Bundle args = new Bundle();
+        args.putString(ARG_PARAM1, param1);
+        args.putString(ARG_PARAM2, param2);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (getArguments() != null) {
+            mParam1 = getArguments().getString(ARG_PARAM1);
+            mParam2 = getArguments().getString(ARG_PARAM2);
+        }
     }
 
     @Override
@@ -412,8 +427,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 .icon(BitmapDescriptorFactory.defaultMarker(
                         BitmapDescriptorFactory.HUE_BLUE))
                 .snippet("Contains most lecture rooms"));
+        // TODO: add more buildings
     }
-
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String[] permissions,
@@ -432,53 +447,4 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             }
         }
     }
-
-    /**
-     * Updates the message displayed in the event bar at the top of the map.
-     *
-     * The method checks the user's calendar (via CalendarHandler) to determine:
-     * 1. If there is an event currently ongoing.
-     * 2. If there is an upcoming event starting soon.
-     * 3. If there are no relevant events.
-     *
-     * Based on this information, the text in the event bar is updated to inform
-     * the user where their lecture/event is happening or that there are no
-     * upcoming events within the checked time window.
-     *
-     * If the calendar cannot be accessed (e.g., permission not granted or
-     * CalendarHandler not initialized), the user is prompted to give calendar
-     * permission so the app can show the building of upcoming lectures.
-     */
-    private void updateEventBar() {
-        if (calendarHandler == null) {
-            eventBar.setText("Give permission to your calendar to display a building for a lecture starting soon");
-            return;
-        }
-
-        ArrayList<Event> ongoingEvents = calendarHandler.getOngoingEvent();
-
-        if (ongoingEvents.size() > 0) {
-            Event e = ongoingEvents.get(0);
-            eventBar.setText("The event is happening at " + e.getLocation());
-            return;
-        }
-
-        ArrayList<Event> upcoming = calendarHandler.getAllEvents();
-
-        // debugging code
-        Log.d("MAP_DEBUG", "Upcoming events count: " + upcoming.size());
-        for (Event e : upcoming) {
-            Log.d("MAP_DEBUG", "Event -> " + e.toString());
-        }
-
-        // TODO: add check for event happening in an hour
-        if (upcoming.size() > 0) {
-            Event e = upcoming.get(0);
-            eventBar.setText("There is an event starting soon at " + e.getLocation());
-        } else {
-            eventBar.setText("There is no event in an hour");
-        }
-    }
-
-    // TODO: add building marking for the lecture happening soon.
 }

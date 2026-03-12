@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".CalendarFragment">
+
+    <!-- TODO: Update blank fragment layout -->
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -12,17 +13,9 @@
         android:orientation="vertical">
 
         <LinearLayout
-            android:id="@+id/SectionCalendarPicker"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
-
-            <Spinner
-                android:id="@+id/calendarPicker"
-                android:layout_width="0dp"
-                android:layout_height="46dp"
-                android:layout_weight="1"
-                android:spinnerMode="dialog" />
 
             <Button
                 android:id="@+id/calendarButton"
@@ -30,50 +23,19 @@
                 android:layout_height="wrap_content"
                 android:text="Show events" />
 
-
-        </LinearLayout>
-
-        <Space
-            android:layout_width="match_parent"
-            android:layout_height="10px" />
-
-        <LinearLayout
-            android:id="@+id/SectionDatePicker"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <ImageButton
-                android:id="@+id/previousDayButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+            <Spinner
+                android:id="@+id/calendarPicker"
+                android:layout_width="match_parent"
+                android:layout_height="46dp"
                 android:layout_weight="1"
-                android:backgroundTint="#673AB7"
-                android:src="@drawable/arrow_back" />
+                android:spinnerMode="dialog" />
 
-            <TextView
-                android:id="@+id/dayText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center_horizontal|center_vertical"
-                android:text="Today"
-                android:textAppearance="@style/TextAppearance.AppCompat.Display1" />
-
-            <ImageButton
-                android:id="@+id/nextDayButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:backgroundTint="#673AB7"
-                android:cropToPadding="false"
-                android:src="@drawable/arrow_forward" />
 
         </LinearLayout>
 
         <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="match_parent">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -82,11 +44,11 @@
 
                 <TextView
                     android:id="@+id/textView"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1" />
+                    android:layout_weight="1"
+                    android:text="TextView" />
             </LinearLayout>
-
         </ScrollView>
 
     </LinearLayout>
