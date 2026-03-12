@@ -1,6 +1,7 @@
 package com.group5.gue.ui.login;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -12,6 +13,7 @@ import com.group5.gue.R;
 import com.group5.gue.data.Result;
 import com.group5.gue.data.auth.AuthManager;
 import com.group5.gue.databinding.ActivityLoginBinding;
+import com.group5.gue.ui.login.launcher.LauncherActivity;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -48,6 +50,8 @@ public class LoginActivity extends AppCompatActivity {
             binding.loading.setVisibility(View.GONE);
             if (result instanceof Result.Success) {
                 setResult(Activity.RESULT_OK);
+                Intent intent = new Intent(getApplicationContext(), LauncherActivity.class);
+                startActivity(intent);
                 finish();
             } else {
                 showError(result);
