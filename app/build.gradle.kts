@@ -5,6 +5,7 @@ plugins {
     id("jacoco")
 }
 
+val apiKey: String = project.findProperty("API_KEY") as String? ?: ""
 android {
     namespace = "com.group5.gue"
     compileSdk {
@@ -17,6 +18,9 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
+
+        buildConfigField("String", "API_KEY", "\"$apiKey\"")
+        manifestPlaceholders["API_KEY"] = apiKey
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -37,6 +41,7 @@ android {
     }
 
     buildFeatures {
+        buildConfig = true
         dataBinding = true
         viewBinding = true
         compose = true

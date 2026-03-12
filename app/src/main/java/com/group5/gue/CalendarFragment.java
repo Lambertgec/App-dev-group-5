@@ -126,6 +126,7 @@ public class CalendarFragment extends Fragment {
     private void setCalendar() {
 
         Spinner spinner = getActivity().findViewById(R.id.calendarPicker);
+        CalendarHandler.selectedCalendar = spinner.getSelectedItem().toString();
         calendarHandler.setCalendar(spinner.getSelectedItem().toString());
 
         ArrayList<Event> events = calendarHandler.getAllEvents();
