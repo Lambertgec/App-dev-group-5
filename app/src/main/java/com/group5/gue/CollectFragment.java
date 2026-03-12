@@ -9,6 +9,8 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.group5.gue.data.user.UserRepository;
+import com.group5.gue.data.model.User;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -33,8 +35,15 @@ public class CollectFragment extends Fragment {
     // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
+    UserRepository userRepository;
+    User user;
+    int userScore;
 
     public CollectFragment() {
+        userRepository = UserRepository.Companion.getInstance();
+        user = userRepository.getCachedUser();
+        userScore = user.getScore();
+
         // Required empty public constructor
     }
 
@@ -90,8 +99,6 @@ public class CollectFragment extends Fragment {
     Button col15;
 
     Button xBut;
-
-    int userScore = 1200; //should instead get data from database
     TextView text1;
     TextView text2;
     TextView text3;
