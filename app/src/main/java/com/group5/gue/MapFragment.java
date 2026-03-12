@@ -22,6 +22,8 @@ import android.content.res.Resources;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.group5.gue.data.annotation.AnnotationRepository;
+import com.group5.gue.data.model.Annotation;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
@@ -38,8 +40,9 @@ import android.widget.Toast;
 import android.app.AlertDialog;
 
 import java.util.ArrayList;
+import java.util.List;
 
-import com.group5.gue.data.auth.AuthRepository;
+import com.group5.gue.data.user.UserRepository;
 import com.group5.gue.data.model.User;
 import com.group5.gue.data.model.Role;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -61,8 +64,20 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private boolean isAddingMarker = false;
     private Snackbar instructionSnackbar;
 
+    AnnotationRepository repository = AnnotationRepository.Companion.getInstance();
+    private List<Annotation> annotationList;
+
+    private int currentFloor = -2; // starting level
+    private Button btnFloorUp, btnFloorDown;
+    private TextView tvFloorLevel;
+    private boolean mapReady = false;
+
+    UserRepository userRepository = UserRepository.getInstance();
+    User user;
+
 
     public MapFragment() {
+        user = userRepository.getCachedUser();
         // Required empty public constructor
     }
 
@@ -84,6 +99,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
         Button btnCenterTue = view.findViewById(R.id.btn_center_tue);
+        btnFloorUp = view.findViewById(R.id.btn_floor_up);
+        btnFloorDown = view.findViewById(R.id.btn_floor_down);
+        tvFloorLevel = view.findViewById(R.id.tv_floor_level);
 
         // Displays the even bar at the top of the fragment
         eventBar = view.findViewById(R.id.event_bar);
@@ -101,7 +119,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         // Role check
         FloatingActionButton addAnnotationBtn = view.findViewById(R.id.add_annotation);
 
-        User user = AuthRepository.getInstance(requireContext()).getCachedUser();
+        
         // Check for ADMIN role
         if (user != null && user.getRole() == Role.USER) {
             // TODO: change to admin
@@ -136,40 +154,140 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         if (mapFragment != null) {
             mapFragment.getMapAsync(this);
         }
+
+        // Fetches building data from the database
+        fetchAnnotations();
+
+        updateFloorLevel();
+
+        // Centers on TU/e when button is clicked
         btnCenterTue.setOnClickListener(v -> {
             if (mMap != null) {
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(tueCampus, 16f));
             }
         });
 
+        // Buttons to change floor
+        btnFloorUp.setOnClickListener(v -> {
+            if (currentFloor < 8) {
+                currentFloor++;
+                updateFloorLevel();
+            }
+        });
+
+        btnFloorDown.setOnClickListener(v -> {
+            if (currentFloor > -2) {
+                currentFloor--;
+                updateFloorLevel();
+            }
+        });
+    }
+
+    /**
+     * Updates the building markers displayed depending on the current floor level
+     */
+    private void updateFloorLevel() {
+        if (currentFloor == -2) {
+            tvFloorLevel.setText("Buildings");
+        } else tvFloorLevel.setText("Level " + currentFloor);
+
+        // Update markers for this floor
+        showMarkersForFloor(currentFloor);
+
+        // Enable/disable buttons depending on floor
+        btnFloorUp.setEnabled(currentFloor < 8);
+        btnFloorDown.setEnabled(currentFloor > -2);
+
+        // Gray out disabled buttons
+        btnFloorUp.setAlpha(currentFloor < 8 ? 1f : 0.5f);
+        btnFloorDown.setAlpha(currentFloor > -2 ? 1f : 0.5f);
+    }
+
+    private void showMarkersForFloor(int floor) {
+        if (mMap == null || annotationList == null) return;
+
+        mMap.clear(); // remove previous markers
+
+        for (Annotation annotation : annotationList) {
+            String levelStr = annotation.getLevel();
+
+            // Case 1: buildings (no level)
+            if ((levelStr == null) && floor == -2) {
+                LatLng pos = new LatLng(annotation.getLatitude(), annotation.getLongitude());
+                mMap.addMarker(new MarkerOptions()
+                        .position(pos)
+                        .title(annotation.getBuilding())
+                        .snippet(annotation.getRoomName())
+                        .icon(BitmapDescriptorFactory.defaultMarker(
+                                BitmapDescriptorFactory.HUE_BLUE
+                        )));
+                continue;
+            }
+
+            // Case 2: rooms (level is numeric)
+            if (levelStr != null) {
+                try {
+                    int annotationLevel = Integer.parseInt(levelStr);
+                    if (annotationLevel == floor && floor > -2) {
+                        LatLng pos
+                                = new LatLng(annotation.getLatitude(), annotation.getLongitude());
+                        mMap.addMarker(new MarkerOptions()
+                                .position(pos)
+                                .title(annotation.getBuilding())
+                                .snippet(annotation.getRoomName())
+                                .icon(BitmapDescriptorFactory.defaultMarker(
+                                        BitmapDescriptorFactory.HUE_BLUE
+                                )));
+                    }
+                } catch (NumberFormatException e) {
+                    // Skip rows with invalid level data
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    private void fetchAnnotations() {
+        repository.getAll(new kotlin.jvm.functions.Function1<List<Annotation>, kotlin.Unit>() {
+            @Override
+            public kotlin.Unit invoke(List<Annotation> annotations) {
+                annotationList = annotations;
+
+                // Only update markers if map is ready
+                if (mapReady) {
+                    updateFloorLevel();
+                }
+
+                return kotlin.Unit.INSTANCE;
+            }
+        });
     }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+        mapReady = true;
 
         mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
         try {
-            mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(
-                    getContext(), R.raw.map_style));
+            mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(getContext(), R.raw.map_style));
         } catch (Resources.NotFoundException e) {
             e.printStackTrace();
         }
 
-        if (ContextCompat.checkSelfPermission(requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION)
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
-
             mMap.setMyLocationEnabled(true);
-
-        } else {
-            requestPermissions(
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    LOCATION_PERMISSION_REQUEST
-            );
         }
 
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(tueCampus, 16f));
+                // Add markers if annotations are already loaded
+        if (annotationList != null && !annotationList.isEmpty()) {
+            updateFloorLevel();
+        }
 
         // Set custom info window
         mMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
@@ -177,7 +295,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             @Override
             public View getInfoContents(@NonNull Marker marker) {
                 return null;
-            }
+        }
 
             @Nullable
             @Override
@@ -192,7 +310,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 snippet.setText(marker.getSnippet());
 
                 // Show 'x' only for admins
-                User user = AuthRepository.getInstance(requireContext()).getCachedUser();
                 if (user != null && user.getRole() == Role.USER) {
                     // TODO: change to admin
                     deleteIcon.setVisibility(View.VISIBLE);
@@ -225,7 +342,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         // Delete logic: Click a marker's info window to delete it (Admin only)
         mMap.setOnInfoWindowClickListener(marker -> {
-            User user = AuthRepository.getInstance(requireContext()).getCachedUser();
             if (user != null && user.getRole() == Role.USER) {
                 //TODO: change admin
                 new AlertDialog.Builder(getContext())

@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- Google Map -->
     <fragment
         android:id="@+id/map"
         android:name="com.google.android.gms.maps.SupportMapFragment"
@@ -17,7 +18,9 @@
         android:orientation="vertical"
         android:gravity="center_horizontal">
 
-        <Button
+    
+    <!-- Button to center TU/e -->
+    <Button
             android:id="@+id/btn_center_tue"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -46,4 +49,37 @@
         android:visibility="gone"
         app:srcCompat="@android:drawable/ic_input_add" />
 
+    <!-- Floor level selector -->
+    <LinearLayout
+        android:id="@+id/floor_selector"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:elevation="8dp">
+
+    <Button
+        android:id="@+id/btn_floor_down"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="⬇"/>
+
+        <TextView
+        android:id="@+id/tv_floor_level"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Level 1"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"/>
+
+    <Button
+        android:id="@+id/btn_floor_up"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="⬆"/>
+</LinearLayout>
 </FrameLayout>
