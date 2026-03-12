@@ -61,6 +61,16 @@ public class MainActivity extends AppCompatActivity {
         MenuInflater menuInflater = new MenuInflater(this);
         menuInflater.inflate(R.menu.top_menu, menu);
 
+        MenuItem profile = menu.findItem(R.id.profile);
+        profile.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                Intent intent = new Intent(MainActivity.this, ProfileActivity.class);
+                startActivity(intent);
+                return true;
+            }
+        });
+
         MenuItem setting = menu.findItem(R.id.setting);
         setting.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
             @Override
