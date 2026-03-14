@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 import androidx.appcompat.widget.Toolbar;
 
@@ -56,6 +57,8 @@ public class MainActivity extends AppCompatActivity {
            }
            return true;
         });
+
+        blockingManager = new AppBlockingManager(this);
     }
 
     @Override
@@ -72,32 +75,33 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         });
-        // Initialize App Blocking
-        initAppBlocking();
+
+        if (blockingManager.isBlockingEnabled()) {
+            Toast.makeText(this, "App blocking is enabled", Toast.LENGTH_SHORT).show();
+            PermissionHandler permissionHandler = new PermissionHandler(this);
+            permissionHandler.requestAppBlocking();
+
+            blockingManager.addBlockedApp("com.android.chrome");
+            blockingManager.addBlockedApp("com.google.android.youtube");
+            blockingManager.addBlockedApp("app.revanced.android.youtube");
+            blockingManager.addBlockedApp("com.instagram.android");
+            blockingManager.addBlockedApp("com.facebook.katana");
+            blockingManager.addBlockedApp("com.facebook.orca");
+            blockingManager.addBlockedApp("com.facebook.lite");
+            blockingManager.addBlockedApp("com.facebook.mlite");
+            blockingManager.addBlockedApp("com.discord");
+
+            try {
+                blockingManager.startBlockingService();
+            } catch (Exception e) {
+                Toast.makeText(this, "Error starting app blocking: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            }
+            
+        } else {
+            Toast.makeText(this, "App blocking is disabled", Toast.LENGTH_SHORT).show();
+        }
         return true;
-
     }
-
-    private void initAppBlocking() {
-        blockingManager = new AppBlockingManager(this);
-
-        PermissionHandler permissionHandler = new PermissionHandler(this);
-        permissionHandler.requestAppBlocking();
-
-        // default block
-        blockingManager.addBlockedApp("com.android.chrome");
-        blockingManager.addBlockedApp("com.google.android.youtube");
-        blockingManager.addBlockedApp("app.revanced.android.youtube");
-        blockingManager.addBlockedApp("com.instagram.android");
-        blockingManager.addBlockedApp("com.facebook.katana");
-        blockingManager.addBlockedApp("com.facebook.orca");
-        blockingManager.addBlockedApp("com.facebook.lite");
-        blockingManager.addBlockedApp("com.facebook.mlite");
-        blockingManager.addBlockedApp("com.discord");
-
-        blockingManager.startBlockingService();
-    }
-
 
     private void switchFragmant(Fragment fragment){
         FragmentManager fragmentManager = getSupportFragmentManager();

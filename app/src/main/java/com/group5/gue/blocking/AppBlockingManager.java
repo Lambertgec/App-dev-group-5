@@ -13,9 +13,9 @@ import java.util.Set;
 
 public class AppBlockingManager {
     private static final String TAG = "AppBlockingManager";
-    private static final String PREFS_NAME = "app_blocking_prefs";
+    public static final String PREFS_NAME = "app_blocking_prefs";
     private static final String KEY_BLOCKED_APPS = "blocked_apps";
-    private static final String KEY_BLOCKING_ENABLED = "blocking_enabled";
+    public static final String KEY_BLOCKING_ENABLED = "blocking";
 
     private final Context context;
     private final SharedPreferences prefs;
@@ -25,11 +25,14 @@ public class AppBlockingManager {
         this.prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
 
+    public boolean isBlockingEnabled() {
+        return prefs.getBoolean(KEY_BLOCKING_ENABLED, false);
+    }
+
     public void startBlockingService() {
         Intent intent = new Intent(context, AppBlockingService.class);
         try {
             ContextCompat.startForegroundService(context, intent);
-            setBlockingEnabled(true);
             Log.d(TAG, "App blocking service started");
         } catch (Exception e) {
             Log.e(TAG, "Failed to start blocking service", e);
@@ -39,7 +42,6 @@ public class AppBlockingManager {
     public void stopBlockingService() {
         Intent intent = new Intent(context, AppBlockingService.class);
         context.stopService(intent);
-        setBlockingEnabled(false);
         Log.d(TAG, "App blocking service stopped");
     }
 
@@ -56,15 +58,6 @@ public class AppBlockingManager {
 
     public boolean isAppBlocked(String packageName) {
         return getBlockedApps().contains(packageName);
-    }
-
-
-    public boolean isBlockingEnabled() {
-        return prefs.getBoolean(KEY_BLOCKING_ENABLED, false);
-    }
-
-    private void setBlockingEnabled(boolean enabled) {
-        prefs.edit().putBoolean(KEY_BLOCKING_ENABLED, enabled).apply();
     }
 
     private void saveBlockedApps(Set<String> blockedApps) {
