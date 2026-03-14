@@ -89,6 +89,7 @@ class FriendsRepository private constructor() : BaseRepository {
 
     /*
      * Add a friend by their display name.
+     * In case the user initiating the action is an admin, elevates the privilege of the target user.
      */
     fun addFriendByDisplayName(displayName: String, callback: (Boolean, String) -> Unit) {
         scope.launch {
