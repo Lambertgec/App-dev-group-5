@@ -8,6 +8,7 @@ import io.github.jan.supabase.postgrest.query.Columns
 import com.group5.gue.api.delete
 import com.group5.gue.api.fetchList
 import com.group5.gue.api.insert
+import com.group5.gue.api.update
 import com.group5.gue.data.model.Follow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,7 +24,8 @@ import java.util.Locale
 @Serializable
 data class Profile(
     @SerialName("id") val id: String? = null,
-    @SerialName("display_name") val displayName: String
+    @SerialName("display_name") val displayName: String,
+    @SerialName("is_admin") var isAdmin: Boolean = false
 )
 
 @Serializable
@@ -127,6 +129,53 @@ class FriendsRepository private constructor() : BaseRepository {
                     if (result != null) callback(true, "Followed ${profile.displayName}!")
                     else callback(false, "Failed to update database")
                 }
+            } catch (e: Exception) {
+                Log.e("FriendsRepository", "Add failed", e)
+                withContext(Dispatchers.Main) { callback(false, "Error: ${e.message}") }
+            }
+        }
+    }
+
+    /*
+     * Elevate the privilege of a user by their display name (admin only).
+     */
+    fun elevatePrivilege(displayName: String, callback: (Boolean, String) -> Unit) {
+        scope.launch {
+            val currentUserId = client.auth.currentSessionOrNull()?.user?.id
+            if (currentUserId == null) {
+                callback(false, "You must be logged in.")
+                return@launch
+            }
+
+            try {
+                val currentUserProfile = client.from("profile").select {
+                    filter { eq("id", currentUserId) }
+                }.decodeSingleOrNull<Profile>()
+
+                if (currentUserProfile?.isAdmin != true) {
+                    withContext(Dispatchers.Main) { callback(false, "Unauthorized: Admin only") }
+                    return@launch
+                }
+
+                val targetProfile = client.from("profile").select {
+                    filter { eq("display_name", displayName) }
+                }.decodeSingleOrNull<Profile>()
+
+                if (targetProfile == null || targetProfile.id == null) {
+                    withContext(Dispatchers.Main) { callback(false, "User not found") }
+                    return@launch
+                }
+
+                targetProfile.isAdmin = true
+
+                val profileRepo = object : BaseRepository {override val tableName = "profile"}
+                val result = profileRepo.update("id", targetProfile.id, targetProfile)
+
+                withContext(Dispatchers.Main) {
+                    if (result != null) callback(true, "elevated privilege for ${targetProfile.displayName}!")
+                    else callback(false, "Failed to elevate privilege")
+                }
+
             } catch (e: Exception) {
                 Log.e("FriendsRepository", "Add failed", e)
                 withContext(Dispatchers.Main) { callback(false, "Error: ${e.message}") }
