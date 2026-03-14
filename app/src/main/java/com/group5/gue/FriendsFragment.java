@@ -44,23 +44,37 @@ public class FriendsFragment extends Fragment {
 
         refreshFriends(friendRepository);
 
+        // Add friends by Keyboard Search button
         binding.addFriendEditText.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                String username = binding.addFriendEditText.getText().toString().trim();
-                if (!username.isEmpty()) {
-                    friendRepository.addFriendByDisplayName(username, (success, message) -> {
-                        Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
-                        if (success) {
-                            binding.addFriendEditText.setText("");
-                            refreshFriends(friendRepository);
-                        }
-                        return Unit.INSTANCE;
-                    });
-                }
+                performAddFriend(friendRepository);
                 return true;
             }
             return false;
         });
+
+        // Setup Click Listener for Add Button
+        binding.addFriendButton.setOnClickListener(v -> performAddFriend(friendRepository));
+    }
+
+    private void performAddFriend(FriendsRepository repository) {
+        String username = binding.addFriendEditText.getText().toString().trim();
+        if (!username.isEmpty()) {
+            repository.addFriendByDisplayName(username, (success, message) -> {
+                if (getContext() != null) {
+                    Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+                }
+                if (success) {
+                    if (binding != null) {
+                        binding.addFriendEditText.setText("");
+                    }
+                    refreshFriends(repository);
+                }
+                return Unit.INSTANCE;
+            });
+        } else {
+            Toast.makeText(getContext(), "Please enter a username", Toast.LENGTH_SHORT).show();
+        }
     }
 
     /*
