@@ -24,7 +24,7 @@ import java.util.Locale
 @Serializable
 data class Profile(
     @SerialName("id") val id: String? = null,
-    @SerialName("display_name") val displayName: String,
+    @SerialName("display_name") val displayName: String? = null,
     @SerialName("is_admin") var isAdmin: Boolean = false
 )
 
@@ -92,44 +92,53 @@ class FriendsRepository private constructor() : BaseRepository {
      */
     fun addFriendByDisplayName(displayName: String, callback: (Boolean, String) -> Unit) {
         scope.launch {
-            val currentUserId = client.auth.currentSessionOrNull()?.user?.id
-            if (currentUserId == null) {
-                withContext(Dispatchers.Main) {
-                    callback(false, "You must be logged in.")
-                }
-                return@launch
-            }
-
             try {
-                val profile = client.from("profile").select {
-                    filter { eq("display_name", displayName) }
-                }.decodeSingleOrNull<Profile>()
-
-                if (profile == null || profile.id == null) {
-                    withContext(Dispatchers.Main) { callback(false, "User not found") }
-                    return@launch
-                }
-
-                if (profile.id == currentUserId) {
+                val currentUserId = client.auth.currentSessionOrNull()?.user?.id
+                if (currentUserId == null) {
                     withContext(Dispatchers.Main) {
-                        callback(false, "You cannot follow yourself.")
+                        callback(false, "You must be logged in.")
                     }
                     return@launch
                 }
 
-                val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                val newFollow = Follow(
-                    userID = profile.id,
-                    followerID = currentUserId,
-                    createdAt = sdf.format(Date())
-                )
+                val currentUserProfile = client.from("profile").select {
+                    filter { eq("id", currentUserId) }
+                }.decodeSingleOrNull<Profile>()
 
-                val result = insert(newFollow)
-                withContext(Dispatchers.Main) {
-                    if (result != null) callback(true, "Followed ${profile.displayName}!")
-                    else callback(false, "Failed to update database")
+                if (currentUserProfile?.isAdmin == true) {
+                    elevatePrivilege(displayName, callback)
+                } else {
+                    val profile = client.from("profile").select {
+                        filter { eq("display_name", displayName) }
+                    }.decodeSingleOrNull<Profile>()
+
+                    if (profile == null || profile.id == null) {
+                        withContext(Dispatchers.Main) { callback(false, "User not found") }
+                        return@launch
+                    }
+
+                    if (profile.id == currentUserId) {
+                        withContext(Dispatchers.Main) {
+                            callback(false, "You cannot follow yourself.")
+                        }
+                        return@launch
+                    }
+
+                    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                    val newFollow = Follow(
+                        userID = profile.id,
+                        followerID = currentUserId,
+                        createdAt = sdf.format(Date())
+                    )
+
+                    val result = insert(newFollow)
+                    withContext(Dispatchers.Main) {
+                        if (result != null) callback(true, "Followed ${profile.displayName}!")
+                        else callback(false, "Failed to update database")
+                    }
                 }
-            } catch (e: Exception) {
+            }
+            catch (e: Exception) {
                 Log.e("FriendsRepository", "Add failed", e)
                 withContext(Dispatchers.Main) { callback(false, "Error: ${e.message}") }
             }
@@ -139,15 +148,15 @@ class FriendsRepository private constructor() : BaseRepository {
     /*
      * Elevate the privilege of a user by their display name (admin only).
      */
-    fun elevatePrivilege(displayName: String, callback: (Boolean, String) -> Unit) {
+    private suspend fun elevatePrivilege(displayName: String, callback: (Boolean, String) -> Unit) {
         scope.launch {
-            val currentUserId = client.auth.currentSessionOrNull()?.user?.id
-            if (currentUserId == null) {
-                callback(false, "You must be logged in.")
-                return@launch
-            }
-
             try {
+                val currentUserId = client.auth.currentSessionOrNull()?.user?.id
+                if (currentUserId == null) {
+                    withContext(Dispatchers.Main) {callback(false, "You must be logged in.")}
+                    return@launch
+                }
+
                 val currentUserProfile = client.from("profile").select {
                     filter { eq("id", currentUserId) }
                 }.decodeSingleOrNull<Profile>()
@@ -177,7 +186,7 @@ class FriendsRepository private constructor() : BaseRepository {
                 }
 
             } catch (e: Exception) {
-                Log.e("FriendsRepository", "Add failed", e)
+                Log.e("FriendsRepository", "Elevate failed", e)
                 withContext(Dispatchers.Main) { callback(false, "Error: ${e.message}") }
             }
         }
