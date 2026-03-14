@@ -133,4 +133,40 @@ class FriendsRepository private constructor() : BaseRepository {
             }
         }
     }
+
+    /**
+     * Remove a friend by their display name.
+     */
+    fun removeFriendByDisplayName(displayName: String, callback: (Boolean) -> Unit) {
+        scope.launch {
+            val currentUserId = client.auth.currentSessionOrNull()?.user?.id
+            if (currentUserId == null) {
+                withContext(Dispatchers.Main) { callback(false) }
+                return@launch
+            }
+
+            try {
+                val profile = client.from("profile").select {
+                    filter { eq("display_name", displayName) }
+                }.decodeSingleOrNull<Profile>()
+
+                if (profile == null || profile.id == null) {
+                    withContext(Dispatchers.Main) { callback(false) }
+                    return@launch
+                }
+
+                client.from(tableName).delete {
+                    filter {
+                        eq("follower_id", currentUserId)
+                        eq("user_id", profile.id)
+                    }
+                }
+                
+                withContext(Dispatchers.Main) { callback(true) }
+            } catch (e: Exception) {
+                Log.e("FriendsRepository", "Remove failed", e)
+                withContext(Dispatchers.Main) { callback(false) }
+            }
+        }
+    }
 }
