@@ -19,6 +19,8 @@
     <string name="preferences">Settings</string>
     <string name="blocking_extra">Social media and other disctacting apps will be blocked</string>
     <string name="title_activity_settings">Settings</string>
+    <string name="setLocation">Location</string>
+    <string name="setTime">Start time</string>
 
 
 </resources>

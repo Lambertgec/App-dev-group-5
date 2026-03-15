@@ -6,7 +6,6 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
 import android.view.LayoutInflater;
@@ -96,7 +95,10 @@ public class HomeFragment extends Fragment {
         FragmentTransaction tr = getChildFragmentManager().beginTransaction();
         //tr.replace(R.id.full_view, new CollectFragment()).commit();
         Fragment collectFragment = new CollectFragment();
-        tr.add(R.id.full_view, collectFragment).hide(collectFragment).commit();
+        tr.add(R.id.full_view, collectFragment).hide(collectFragment);
+
+        Fragment verificationCode = new VerificationCodeFragment();
+        tr.add(R.id.full_view, verificationCode).show(verificationCode).commit();
 
         collectiblesButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -108,6 +110,7 @@ public class HomeFragment extends Fragment {
 
             }
         });
+
 //        add calendar if has permission, else request it
         PermissionHandler permissionHandler = new PermissionHandler(requireActivity());
         if (permissionHandler.checkPermission(Manifest.permission.READ_CALENDAR)) {
