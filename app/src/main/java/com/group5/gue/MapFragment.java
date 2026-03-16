@@ -122,8 +122,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         
         // Check for ADMIN role
-        if (user != null && user.getRole() == Role.USER) {
-            // TODO: change to admin
+        if (user != null && user.getRole() == Role.ADMIN) {
             addAnnotationBtn.setVisibility(View.VISIBLE);
             addAnnotationBtn.setOnClickListener(v -> {
                 isAddingMarker = true;
@@ -311,8 +310,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 snippet.setText(marker.getSnippet());
 
                 // Show 'x' only for admins
-                if (user != null && user.getRole() == Role.USER) {
-                    // TODO: change to admin
+                if (user != null && user.getRole() == Role.ADMIN) {
                     deleteIcon.setVisibility(View.VISIBLE);
                 } else {
                     deleteIcon.setVisibility(View.GONE);
@@ -343,8 +341,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         // Delete logic: Click a marker's info window to delete it (Admin only)
         mMap.setOnInfoWindowClickListener(marker -> {
-            if (user != null && user.getRole() == Role.USER) {
-                //TODO: change admin
+            if (user != null && user.getRole() == Role.ADMIN) {
                 new AlertDialog.Builder(getContext())
                         .setTitle("Delete Location")
                         .setMessage("Are you sure you want to delete " + marker.getTitle() + "?")

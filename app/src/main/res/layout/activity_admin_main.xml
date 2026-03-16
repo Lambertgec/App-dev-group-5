@@ -7,16 +7,32 @@
     android:layout_height="match_parent"
     tools:context=".AdminMainActivity">
 
-    <TextView
-        android:id="@+id/admin_title"
-        android:layout_width="wrap_content"
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/admin_toolbar"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Admin Dashboard"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:background="#03F4DE"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <FrameLayout
+        android:id="@+id/admin_frame"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/bottomNavigationView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/admin_toolbar" />
+
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavigationView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:background="@color/white"
+        app:menu="@menu/bottom_menu" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
