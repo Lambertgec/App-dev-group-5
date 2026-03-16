@@ -1,12 +1,10 @@
 package com.group5.gue;
 
-import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -17,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.group5.gue.data.friends.FriendsRepository;
 import com.group5.gue.databinding.FragmentFriendsBinding;
+import com.group5.gue.databinding.ItemFriendBinding;
 
 import kotlin.Unit;
 import java.util.List;
@@ -103,19 +102,23 @@ public class FriendsFragment extends Fragment {
             @NonNull
             @Override
             public FriendViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-                TextView tv = new TextView(parent.getContext());
-                tv.setTextSize(18);
-                tv.setPadding(32, 32, 32, 32);
-                tv.setTextColor(Color.WHITE);
-                tv.setLayoutParams(new ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT));
-                return new FriendViewHolder(tv);
+                ItemFriendBinding itemBinding = ItemFriendBinding.inflate(
+                        LayoutInflater.from(parent.getContext()), parent, false);
+                return new FriendViewHolder(itemBinding);
             }
 
             @Override
             public void onBindViewHolder(@NonNull FriendViewHolder holder, int position) {
-                holder.textView.setText(friends.get(position));
+                String friendName = friends.get(position);
+                holder.itemBinding.friendNameTextView.setText(friendName);
+                holder.itemBinding.removeFriendButton.setOnClickListener(v -> {
+                    FriendsRepository.getInstance().removeFriendByDisplayName(friendName, success -> {
+                        if (success) {
+                            refreshFriends(FriendsRepository.getInstance());
+                        }
+                        return Unit.INSTANCE;
+                    });
+                });
             }
 
             @Override
@@ -141,11 +144,11 @@ public class FriendsFragment extends Fragment {
     }
 
     static class FriendViewHolder extends RecyclerView.ViewHolder {
-        TextView textView;
+        ItemFriendBinding itemBinding;
 
-        FriendViewHolder(View v) {
-            super(v);
-            textView = (TextView) v;
+        FriendViewHolder(ItemFriendBinding itemBinding) {
+            super(itemBinding.getRoot());
+            this.itemBinding = itemBinding;
         }
     }
 }
