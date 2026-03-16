@@ -8,6 +8,7 @@ import io.github.jan.supabase.postgrest.query.Columns
 import com.group5.gue.api.delete
 import com.group5.gue.api.fetchList
 import com.group5.gue.api.insert
+import com.group5.gue.api.update
 import com.group5.gue.data.model.Follow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,7 +24,8 @@ import java.util.Locale
 @Serializable
 data class Profile(
     @SerialName("id") val id: String? = null,
-    @SerialName("display_name") val displayName: String
+    @SerialName("display_name") val displayName: String? = null,
+    @SerialName("is_admin") var isAdmin: Boolean = false
 )
 
 @Serializable
@@ -87,48 +89,105 @@ class FriendsRepository private constructor() : BaseRepository {
 
     /*
      * Add a friend by their display name.
+     * In case the user initiating the action is an admin, elevates the privilege of the target user.
      */
     fun addFriendByDisplayName(displayName: String, callback: (Boolean, String) -> Unit) {
         scope.launch {
-            val currentUserId = client.auth.currentSessionOrNull()?.user?.id
-            if (currentUserId == null) {
-                withContext(Dispatchers.Main) {
-                    callback(false, "You must be logged in.")
-                }
-                return@launch
-            }
-
             try {
-                val profile = client.from("profile").select {
-                    filter { eq("display_name", displayName) }
-                }.decodeSingleOrNull<Profile>()
-
-                if (profile == null || profile.id == null) {
-                    withContext(Dispatchers.Main) { callback(false, "User not found") }
-                    return@launch
-                }
-
-                if (profile.id == currentUserId) {
+                val currentUserId = client.auth.currentSessionOrNull()?.user?.id
+                if (currentUserId == null) {
                     withContext(Dispatchers.Main) {
-                        callback(false, "You cannot follow yourself.")
+                        callback(false, "You must be logged in.")
                     }
                     return@launch
                 }
 
-                val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                val newFollow = Follow(
-                    userID = profile.id,
-                    followerID = currentUserId,
-                    createdAt = sdf.format(Date())
-                )
+                val currentUserProfile = client.from("profile").select {
+                    filter { eq("id", currentUserId) }
+                }.decodeSingleOrNull<Profile>()
 
-                val result = insert(newFollow)
-                withContext(Dispatchers.Main) {
-                    if (result != null) callback(true, "Followed ${profile.displayName}!")
-                    else callback(false, "Failed to update database")
+                if (currentUserProfile?.isAdmin == true) {
+                    elevatePrivilege(displayName, callback)
+                } else {
+                    val profile = client.from("profile").select {
+                        filter { eq("display_name", displayName) }
+                    }.decodeSingleOrNull<Profile>()
+
+                    if (profile == null || profile.id == null) {
+                        withContext(Dispatchers.Main) { callback(false, "User not found") }
+                        return@launch
+                    }
+
+                    if (profile.id == currentUserId) {
+                        withContext(Dispatchers.Main) {
+                            callback(false, "You cannot follow yourself.")
+                        }
+                        return@launch
+                    }
+
+                    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                    val newFollow = Follow(
+                        userID = profile.id,
+                        followerID = currentUserId,
+                        createdAt = sdf.format(Date())
+                    )
+
+                    val result = insert(newFollow)
+                    withContext(Dispatchers.Main) {
+                        if (result != null) callback(true, "Followed ${profile.displayName}!")
+                        else callback(false, "Failed to update database")
+                    }
                 }
-            } catch (e: Exception) {
+            }
+            catch (e: Exception) {
                 Log.e("FriendsRepository", "Add failed", e)
+                withContext(Dispatchers.Main) { callback(false, "Error: ${e.message}") }
+            }
+        }
+    }
+
+    /*
+     * Elevate the privilege of a user by their display name (admin only).
+     */
+    private suspend fun elevatePrivilege(displayName: String, callback: (Boolean, String) -> Unit) {
+        scope.launch {
+            try {
+                val currentUserId = client.auth.currentSessionOrNull()?.user?.id
+                if (currentUserId == null) {
+                    withContext(Dispatchers.Main) {callback(false, "You must be logged in.")}
+                    return@launch
+                }
+
+                val currentUserProfile = client.from("profile").select {
+                    filter { eq("id", currentUserId) }
+                }.decodeSingleOrNull<Profile>()
+
+                if (currentUserProfile?.isAdmin != true) {
+                    withContext(Dispatchers.Main) { callback(false, "Unauthorized: Admin only") }
+                    return@launch
+                }
+
+                val targetProfile = client.from("profile").select {
+                    filter { eq("display_name", displayName) }
+                }.decodeSingleOrNull<Profile>()
+
+                if (targetProfile == null || targetProfile.id == null) {
+                    withContext(Dispatchers.Main) { callback(false, "User not found") }
+                    return@launch
+                }
+
+                targetProfile.isAdmin = true
+
+                val profileRepo = object : BaseRepository {override val tableName = "profile"}
+                val result = profileRepo.update("id", targetProfile.id, targetProfile)
+
+                withContext(Dispatchers.Main) {
+                    if (result != null) callback(true, "elevated privilege for ${targetProfile.displayName}!")
+                    else callback(false, "Failed to elevate privilege")
+                }
+
+            } catch (e: Exception) {
+                Log.e("FriendsRepository", "Elevate failed", e)
                 withContext(Dispatchers.Main) { callback(false, "Error: ${e.message}") }
             }
         }
