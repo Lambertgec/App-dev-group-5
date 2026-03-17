@@ -1,9 +1,14 @@
 package com.group5.gue;
 
+import android.graphics.Color;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
 
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -49,18 +54,16 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import java.util.Objects;
 
-
 /**
  * A simple {@link Fragment} subclass for displaying the TU/e map with markers.
  */
 public class MapFragment extends Fragment implements OnMapReadyCallback {
     private GoogleMap mMap;
-    private FusedLocationProviderClient fusedLocationClient;
     private static final int LOCATION_PERMISSION_REQUEST = 1;
     LatLng tueCampus = new LatLng(51.448, 5.489);
     private TextView eventBar;
     private CalendarHandler calendarHandler;
-    
+
     // Admin state
     private boolean isAddingMarker = false;
     private Snackbar instructionSnackbar;
@@ -76,12 +79,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     UserRepository userRepository = UserRepository.Companion.getInstance();
     User user;
 
-
     public MapFragment() {
         user = userRepository.getCachedUser();
         // Required empty public constructor
     }
 
+    /* -------------------------------- Override Functions ------------------------------------- */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -98,7 +101,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
+        FusedLocationProviderClient fusedLocationClient =
+                LocationServices.getFusedLocationProviderClient(requireActivity());
         Button btnCenterTue = view.findViewById(R.id.btn_center_tue);
         btnFloorUp = view.findViewById(R.id.btn_floor_up);
         btnFloorDown = view.findViewById(R.id.btn_floor_down);
@@ -120,7 +124,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         // Role check
         FloatingActionButton addAnnotationBtn = view.findViewById(R.id.add_annotation);
 
-        
+
         // Check for ADMIN role
         if (user != null && user.getRole() == Role.USER) {
             // TODO: change to admin
@@ -128,13 +132,15 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             addAnnotationBtn.setOnClickListener(v -> {
                 isAddingMarker = true;
                 // Use a Snackbar that stays until dismissed
-                instructionSnackbar = Snackbar.make(view, "Tap on the map to place a marker", Snackbar.LENGTH_INDEFINITE);
-                
+                instructionSnackbar = Snackbar.make(view, "Tap on the map to place a marker",
+                        Snackbar.LENGTH_INDEFINITE);
+
                 // Position Snackbar at the top
                 View snackbarView = instructionSnackbar.getView();
-                FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) snackbarView.getLayoutParams();
+                FrameLayout.LayoutParams params = (FrameLayout.LayoutParams)
+                        snackbarView.getLayoutParams();
                 params.gravity = Gravity.TOP;
-                params.topMargin = 150; 
+                params.topMargin = 150;
                 snackbarView.setLayoutParams(params);
 
                 instructionSnackbar.setAction("Cancel", v1 -> {
@@ -159,7 +165,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         // Fetches building data from the database
         fetchAnnotations();
 
-        updateFloorLevel();
+        updateFloorLevel(null, null);
 
         // Centers on TU/e when button is clicked
         btnCenterTue.setOnClickListener(v -> {
@@ -172,97 +178,14 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         btnFloorUp.setOnClickListener(v -> {
             if (currentFloor < 8) {
                 currentFloor++;
-                updateFloorLevel();
+                updateFloorLevel(null, null);
             }
         });
 
         btnFloorDown.setOnClickListener(v -> {
             if (currentFloor > -2) {
                 currentFloor--;
-                updateFloorLevel();
-            }
-        });
-    }
-
-    /**
-     * Updates the building markers displayed depending on the current floor level
-     */
-    private void updateFloorLevel() {
-        if (currentFloor == -2) {
-            tvFloorLevel.setText("Buildings");
-        } else tvFloorLevel.setText("Level " + currentFloor);
-
-        // Update markers for this floor
-        showMarkersForFloor(currentFloor);
-
-        // Enable/disable buttons depending on floor
-        btnFloorUp.setEnabled(currentFloor < 8);
-        btnFloorDown.setEnabled(currentFloor > -2);
-
-        // Gray out disabled buttons
-        btnFloorUp.setAlpha(currentFloor < 8 ? 1f : 0.5f);
-        btnFloorDown.setAlpha(currentFloor > -2 ? 1f : 0.5f);
-    }
-
-    private void showMarkersForFloor(int floor) {
-        if (mMap == null || annotationList == null) return;
-
-        mMap.clear(); // remove previous markers
-
-        for (Annotation annotation : annotationList) {
-            String levelStr = annotation.getLevel();
-
-            // Case 1: buildings (no level)
-            if ((levelStr == null) && floor == -2) {
-                LatLng pos = new LatLng(annotation.getLatitude(), annotation.getLongitude());
-                mMap.addMarker(new MarkerOptions()
-                        .position(pos)
-                        .title(annotation.getBuilding())
-                        .snippet(annotation.getRoomName())
-                        .icon(BitmapDescriptorFactory.defaultMarker(
-                                BitmapDescriptorFactory.HUE_BLUE
-                        )));
-                continue;
-            }
-
-            // Case 2: rooms (level is numeric)
-            if (levelStr != null) {
-                try {
-                    int annotationLevel = Integer.parseInt(levelStr);
-                    if (annotationLevel == floor && floor > -2) {
-                        LatLng pos
-                                = new LatLng(annotation.getLatitude(), annotation.getLongitude());
-                        mMap.addMarker(new MarkerOptions()
-                                .position(pos)
-                                .title(annotation.getBuilding())
-                                .snippet(annotation.getRoomName())
-                                .icon(BitmapDescriptorFactory.defaultMarker(
-                                        BitmapDescriptorFactory.HUE_BLUE
-                                )));
-                    }
-                } catch (NumberFormatException e) {
-                    // Skip rows with invalid level data
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
-    /**
-     *
-     */
-    private void fetchAnnotations() {
-        repository.getAll(new kotlin.jvm.functions.Function1<List<Annotation>, kotlin.Unit>() {
-            @Override
-            public kotlin.Unit invoke(List<Annotation> annotations) {
-                annotationList = annotations;
-
-                // Only update markers if map is ready
-                if (mapReady) {
-                    updateFloorLevel();
-                }
-
-                return kotlin.Unit.INSTANCE;
+                updateFloorLevel(null, null);
             }
         });
     }
@@ -279,15 +202,16 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             e.printStackTrace();
         }
 
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+        if (ContextCompat.checkSelfPermission(requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             mMap.setMyLocationEnabled(true);
         }
 
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(tueCampus, 16f));
-                // Add markers if annotations are already loaded
+        // Add markers if annotations are already loaded
         if (annotationList != null && !annotationList.isEmpty()) {
-            updateFloorLevel();
+            updateFloorLevel(null, null);
         }
 
         // Set custom info window
@@ -296,13 +220,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             @Override
             public View getInfoContents(@NonNull Marker marker) {
                 return null;
-        }
+            }
 
             @Nullable
             @Override
             public View getInfoWindow(@NonNull Marker marker) {
                 View window = getLayoutInflater().inflate(R.layout.custom_info_window, null);
-                
+
                 TextView title = window.findViewById(R.id.info_window_title);
                 TextView snippet = window.findViewById(R.id.info_window_snippet);
                 ImageView deleteIcon = window.findViewById(R.id.delete);
@@ -324,11 +248,261 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         // Adding listeners for Admin actions
         setupAdminListeners();
-
-        // Adding markers to the Map
-        loadMarkers();
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        if (requestCode == LOCATION_PERMISSION_REQUEST) {
+            if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                if (ActivityCompat.checkSelfPermission(requireContext(),
+                        Manifest.permission.ACCESS_FINE_LOCATION)
+                        == PackageManager.PERMISSION_GRANTED) {
+
+                    mMap.setMyLocationEnabled(true);
+                }
+            }
+        }
+    }
+
+    /* ---------------------------- Markers' Display Functions --------------------------------- */
+
+    /**
+     * Fetches the building annotations from the Supabase database and stores them in a list
+     * {@link MapFragment#annotationList}.
+     */
+    private void fetchAnnotations() {
+        repository.getAll(new kotlin.jvm.functions.Function1<List<Annotation>, kotlin.Unit>() {
+            @Override
+            public kotlin.Unit invoke(List<Annotation> annotations) {
+                annotationList = annotations;
+
+                // Only update markers if map is ready
+                if (mapReady) {
+                    updateFloorLevel(null, null);
+                }
+
+                return kotlin.Unit.INSTANCE;
+            }
+        });
+    }
+
+    /**
+     * Updates the building markers displayed depending on the current floor level.
+     */
+    private void updateFloorLevel(String withoutBuilding, String withoutRoom) {
+        if (currentFloor == -2) {
+            tvFloorLevel.setText("Buildings");
+        } else tvFloorLevel.setText("Level " + currentFloor);
+
+        // Update markers for this floor
+        showMarkersForFloor(withoutBuilding, withoutRoom);
+
+        // Enable/disable buttons depending on floor
+        btnFloorUp.setEnabled(currentFloor < 8);
+        btnFloorDown.setEnabled(currentFloor > -2);
+
+        // Gray out disabled buttons
+        btnFloorUp.setAlpha(currentFloor < 8 ? 1f : 0.5f);
+        btnFloorDown.setAlpha(currentFloor > -2 ? 1f : 0.5f);
+    }
+
+    /**
+     * Updates ONLY the markers on the map to show the rooms/buildings corresponding to
+     * {@link MapFragment#currentFloor}.
+     *
+     * @param withoutBuilding string for a building name that is selected not to show. Null
+     *                        if all buildings should be shown.
+     * @param withoutRoom     if there is a room number associated with the lecture place, the room
+     *                        number can be passed. This way room in withoutBuilding with number
+     *                        withoutRoom will not be shown on the map. Null if there is no number
+     *                        for the location or all markers should be shown.
+     */
+    private void showMarkersForFloor(String withoutBuilding, String withoutRoom) {
+        if (mMap == null || annotationList == null) return;
+
+        mMap.clear(); // remove previous markers
+
+        for (Annotation annotation : annotationList) {
+            String levelStr = annotation.getLevel();
+
+            // Case 1: buildings (no level)
+            if ((levelStr == null) && currentFloor == -2 &&
+                    !Objects.equals(annotation.getBuilding(), withoutBuilding)) {
+                LatLng pos = new LatLng(annotation.getLatitude(), annotation.getLongitude());
+                mMap.addMarker(new MarkerOptions()
+                        .position(pos)
+                        .title(annotation.getBuilding())
+                        .snippet(annotation.getRoomName())
+                        .icon(BitmapDescriptorFactory.defaultMarker(
+                                BitmapDescriptorFactory.HUE_BLUE
+                        )));
+                continue;
+            }
+
+            // Case 2: rooms (level is numeric)
+            if (levelStr != null) {
+                try {
+                    int annotationLevel = Integer.parseInt(levelStr);
+                    if (annotationLevel == currentFloor && currentFloor > -2 &&
+                            !(Objects.equals(annotation.getBuilding(), withoutBuilding) &&
+                                    Objects.equals(annotation.getRoomName(), withoutRoom))) {
+                        LatLng pos
+                                = new LatLng(annotation.getLatitude(), annotation.getLongitude());
+                        mMap.addMarker(new MarkerOptions()
+                                .position(pos)
+                                .title(annotation.getBuilding())
+                                .snippet(annotation.getRoomName())
+                                .icon(BitmapDescriptorFactory.defaultMarker(
+                                        BitmapDescriptorFactory.HUE_BLUE
+                                )));
+                    }
+                } catch (NumberFormatException e) {
+                    // Skip rows with invalid level data
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    /**
+     * Updates the floor level to match the one of location's, unless it is not in the database.
+     * This then also marks in different color the location's coordinates on the map.
+     * @param location - the location name that needs to be marked in different color.
+     */
+    private void markLocation(String location) {
+        if (annotationList == null) return;
+
+        String[] parts = location.split(" ");
+
+        if (parts.length < 2) {
+            Log.e("MAP_DEBUG", "Invalid location format: " + location);
+            return;
+        }
+
+        String building = parts[0];
+        String room = parts[1];
+
+        Annotation currentLocation = null;
+
+        for (Annotation annotation : annotationList) {
+            if (building.equalsIgnoreCase(annotation.getBuilding()) &&
+                    room.equalsIgnoreCase(annotation.getRoomName())) {
+                currentLocation = annotation;
+                break;
+            }
+        }
+
+        if (currentLocation == null) {
+            for (Annotation annotation : annotationList) {
+                if (building.equalsIgnoreCase(annotation.getBuilding())) {
+                    currentLocation = annotation;
+                    break;
+                }
+            }
+        }
+
+        if (currentLocation == null) {
+            Log.d("MAP_DEBUG", "There is no such location in the database: " + location);
+            return;
+        }
+
+        if (currentLocation.getLevel() == null)
+            currentFloor = -2;
+        else
+            currentFloor = Integer.parseInt(currentLocation.getLevel());
+
+        updateFloorLevel(currentLocation.getBuilding(), currentLocation.getRoomName());
+
+        LatLng pos = new LatLng(currentLocation.getLatitude(),
+                currentLocation.getLongitude());
+
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 18f));
+
+        mMap.addMarker(new MarkerOptions()
+                .position(pos)
+                .title(currentLocation.getBuilding())
+                .snippet(currentLocation.getRoomName())
+                .icon(BitmapDescriptorFactory.defaultMarker(
+                        BitmapDescriptorFactory.HUE_RED
+                )));
+    }
+
+    /* ------------------------------ Events Bar Functions ------------------------------------ */
+    /**
+     * Updates the message displayed in the event bar at the top of the map.
+     * The method checks the user's calendar (via CalendarHandler) to determine:
+     * 1. If there is an event currently ongoing.
+     * 2. If there is an upcoming event starting soon.
+     * 3. If there are no relevant events.
+     * Based on this information, the text in the event bar is updated to inform
+     * the user where their lecture/event is happening or that there are no
+     * upcoming events within the checked time window.
+     * If the calendar cannot be accessed (e.g., permission not granted or
+     * CalendarHandler not initialized), the user is prompted to give calendar
+     * permission so the app can show the building of upcoming lectures.
+     */
+    private void updateEventBar() {
+        if (calendarHandler == null) {
+            eventBar.setText(getString(R.string.calendar_permission_message));
+            return;
+        }
+
+        ArrayList<Event> ongoingEvents = calendarHandler.getOngoingEvent();
+
+        if (!ongoingEvents.isEmpty()) {
+            setEventBarClickable(getString(R.string.event_happening), ongoingEvents.get(0));
+            return;
+        }
+
+        // Checks for events happening in 1 hour
+        ArrayList<Event> upcoming = calendarHandler.getStartingSoon();
+
+        if (!upcoming.isEmpty()) {
+            setEventBarClickable(getString(R.string.event_starting_soon), upcoming.get(0));
+        } else {
+            eventBar.setText(R.string.no_event_soon);
+        }
+    }
+
+    /**
+     * Updates the eventBar with clickable location in event e, that marks the location
+     * (if it is in the database) and centers it. This also updates the displayed floor.
+     * @param text - text displayed in the eventBar.
+     * @param e - event whose location needs to be displayed in the eventBar.
+     */
+    private void setEventBarClickable(String text, Event e)
+    {
+        if (e.getLocation() == null || e.getLocation().isEmpty()) {
+            eventBar.setText(text + " (no location)");
+            return;
+        }
+
+        String fullText = text + " " + e.getLocation();
+        Log.d("MAP_DEBUG", e.getLocation());
+
+        // Find where the location starts
+        int start = fullText.indexOf(e.getLocation());
+        int end = start + e.getLocation().length();
+
+        SpannableString spannable = new SpannableString(fullText);
+
+        spannable.setSpan(new ClickableSpan() {
+            @Override
+            public void onClick(@NonNull View widget) {
+                markLocation(e.getLocation());
+            }
+        }, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+        eventBar.setText(spannable);
+        eventBar.setMovementMethod(LinkMovementMethod.getInstance());
+        eventBar.setHighlightColor(Color.TRANSPARENT);
+    }
+
+    /* ------------------------------- Admin view Functions ------------------------------------ */
     private void setupAdminListeners() {
         mMap.setOnMapClickListener(latLng -> {
             if (isAddingMarker) {
@@ -363,7 +537,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setTitle("Add New Location");
 
-        View viewInflated = LayoutInflater.from(getContext()).inflate(R.layout.dialog_add_marker, (ViewGroup) getView(), false);
+        View viewInflated = LayoutInflater.from(getContext()).inflate(R.layout.dialog_add_marker,
+                (ViewGroup) getView(), false);
         final EditText inputName = viewInflated.findViewById(R.id.input_building_name);
         final EditText inputSnippet = viewInflated.findViewById(R.id.input_building_snippet);
 
@@ -372,107 +547,25 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         builder.setPositiveButton("Save", (dialog, which) -> {
             String name = inputName.getText().toString();
             String snippet = inputSnippet.getText().toString();
-            
+
             if (!name.isEmpty()) {
                 mMap.addMarker(new MarkerOptions()
                         .position(latLng)
                         .title(name)
                         .snippet(snippet)
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
-                
+                        .icon(BitmapDescriptorFactory.defaultMarker(
+                                BitmapDescriptorFactory.HUE_BLUE
+                        )));
+
                 // TODO: Save to Supabase
                 Log.d("MAP_ADMIN", "Saving " + name + " at " + latLng.toString());
-                Toast.makeText(getContext(), name + " added successfully", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), name + " added successfully",
+                        Toast.LENGTH_SHORT).show();
             }
         });
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+        builder.setNegativeButton("Cancel",
+                (dialog, which) -> dialog.cancel());
 
         builder.show();
     }
-
-    private void loadMarkers() {
-        // These are your default markers
-        // TODO: get the exact coordinates from database + additional info
-        // TODO: add more buildings
-        LatLng metaforum = new LatLng(51.447868, 5.487455);
-        LatLng atlas = new LatLng(51.44784, 5.48605);
-        LatLng auditorium = new LatLng(51.447910, 5.484945);
-
-        mMap.addMarker(new MarkerOptions()
-                .position(metaforum)
-                .title("MF (Metaforum)")
-                .icon(BitmapDescriptorFactory.defaultMarker(
-                        BitmapDescriptorFactory.HUE_BLUE))
-                .snippet("Contains the TU/e library and ESA desk"));
-        mMap.addMarker(new MarkerOptions()
-                .position(atlas)
-                .title("Atlas")
-                .icon(BitmapDescriptorFactory.defaultMarker(
-                        BitmapDescriptorFactory.HUE_BLUE)));
-        mMap.addMarker(new MarkerOptions()
-                .position(auditorium)
-                .title("Aud (Auditorium)")
-                .icon(BitmapDescriptorFactory.defaultMarker(
-                        BitmapDescriptorFactory.HUE_BLUE))
-                .snippet("Contains most lecture rooms"));
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-
-        if (requestCode == LOCATION_PERMISSION_REQUEST) {
-            if (grantResults.length > 0
-                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-                if (ActivityCompat.checkSelfPermission(requireContext(),
-                        Manifest.permission.ACCESS_FINE_LOCATION)
-                        == PackageManager.PERMISSION_GRANTED) {
-
-                    mMap.setMyLocationEnabled(true);
-                }
-            }
-        }
-    }
-
-    /**
-     * Updates the message displayed in the event bar at the top of the map.
-     * The method checks the user's calendar (via CalendarHandler) to determine:
-     * 1. If there is an event currently ongoing.
-     * 2. If there is an upcoming event starting soon.
-     * 3. If there are no relevant events.
-     * Based on this information, the text in the event bar is updated to inform
-     * the user where their lecture/event is happening or that there are no
-     * upcoming events within the checked time window.
-     * If the calendar cannot be accessed (e.g., permission not granted or
-     * CalendarHandler not initialized), the user is prompted to give calendar
-     * permission so the app can show the building of upcoming lectures.
-     */
-    private void updateEventBar() {
-        if (calendarHandler == null) {
-            eventBar.setText(getString(R.string.calendar_permission_message));
-            return;
-        }
-
-        ArrayList<Event> ongoingEvents = calendarHandler.getOngoingEvent();
-
-        if (!ongoingEvents.isEmpty()) {
-            Event e = ongoingEvents.get(0);
-            eventBar.setText(getString(R.string.event_happening, e.getLocation()));
-            return;
-        }
-
-        // Checks for events happening in 1 hour
-        ArrayList<Event> upcoming = calendarHandler.getStartingSoon();
-
-        if (!upcoming.isEmpty()) {
-            Event e = upcoming.get(0);
-            eventBar.setText(getString(R.string.event_starting_soon, e.getLocation()));
-        } else {
-            eventBar.setText(R.string.no_event_soon);
-        }
-    }
-
-    // TODO: add building marking for the lecture happening soon.
 }

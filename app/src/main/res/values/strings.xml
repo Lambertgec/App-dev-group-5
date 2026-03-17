@@ -12,9 +12,9 @@
     <string name="calendar_permission_message">
         Give permission to your calendar to display a building for a lecture starting soon
     </string>
-    <string name="event_happening">The event is happening at %1$s</string>
+    <string name="event_happening">The event is happening at</string>
     <string name="event_starting_soon">
-        There is an event starting soon at %1$s
+        There is an event starting soon at
     </string>
     <string name="no_event_soon"> There is no event in an hour </string>
 
