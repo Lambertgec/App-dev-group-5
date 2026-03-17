@@ -25,6 +25,7 @@ import java.util.Locale
 data class Profile(
     @SerialName("id") val id: String? = null,
     @SerialName("display_name") val displayName: String? = null,
+    @SerialName("score") val score: Long = 0L,
     @SerialName("is_admin") var isAdmin: Boolean = false
 )
 
@@ -79,6 +80,41 @@ class FriendsRepository private constructor() : BaseRepository {
 
             } catch (e: Exception) {
                 Log.e("FriendsRepository", "fetchFriends: Error decoding or fetching", e)
+                emptyList()
+            }
+            withContext(Dispatchers.Main) {
+                callback(friends)
+            }
+        }
+    }
+
+    /**
+     * Fetch the list of friends along with their scores for the leaderboard.
+     */
+    fun fetchFriendsWithScores(callback: (List<Profile>) -> Unit) {
+        scope.launch {
+            val currentUserId = client.auth.currentSessionOrNull()?.user?.id
+
+            if (currentUserId == null) {
+                withContext(Dispatchers.Main) { callback(emptyList()) }
+                return@launch
+            }
+
+            val friends = try {
+                val response = client.from(tableName).select(
+                    Columns.raw("user_id, profile!user_id(display_name, score)")
+                ) {
+                    filter {
+                        eq("follower_id", currentUserId)
+                    }
+                }
+
+                val entries = response.decodeList<FollowEntry>()
+                entries.mapNotNull { it.profile }
+                    .sortedByDescending { it.score }
+
+            } catch (e: Exception) {
+                Log.e("FriendsRepository", "fetchFriendsWithScores error", e)
                 emptyList()
             }
             withContext(Dispatchers.Main) {
