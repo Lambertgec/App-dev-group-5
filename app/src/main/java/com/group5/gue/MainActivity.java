@@ -16,8 +16,12 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import com.group5.gue.data.auth.AuthManager;
+import com.group5.gue.ui.login.launcher.LauncherActivity;
 
 import com.group5.gue.databinding.ActivityMainBinding;
+
+import kotlin.Unit;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -62,23 +66,28 @@ public class MainActivity extends AppCompatActivity {
         menuInflater.inflate(R.menu.top_menu, menu);
 
         MenuItem profile = menu.findItem(R.id.profile);
-        profile.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
-                Intent intent = new Intent(MainActivity.this, ProfileActivity.class);
-                startActivity(intent);
-                return true;
-            }
+        profile.setOnMenuItemClickListener(item -> {
+            Intent intent = new Intent(MainActivity.this, ProfileActivity.class);
+            startActivity(intent);
+            return true;
         });
 
         MenuItem setting = menu.findItem(R.id.setting);
-        setting.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
-                Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
-                startActivity(intent);
-                return true;
-            }
+        setting.setOnMenuItemClickListener(item -> {
+            Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+            startActivity(intent);
+            return true;
+        });
+
+        MenuItem logout = menu.findItem(R.id.logout);
+        logout.setOnMenuItemClickListener(item -> {
+            AuthManager.Companion.getInstance(MainActivity.this).logout(result -> {
+               Intent intent = new Intent(MainActivity.this, LauncherActivity.class);
+               startActivity(intent);
+               return Unit.INSTANCE;
+
+            });
+            return true;
         });
         return true;
     }
