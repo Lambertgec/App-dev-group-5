@@ -17,7 +17,8 @@ import android.content.Intent;
 
 import com.group5.gue.data.PermissionHandler;
 import com.group5.gue.data.auth.AuthManager;
-import com.group5.gue.ui.login.LoginActivity;
+import com.group5.gue.ui.login.launcher.LauncherActivity;
+import kotlin.Unit;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -85,9 +86,10 @@ public class HomeFragment extends Fragment {
         Button logoutButton = view.findViewById(R.id.logout_button);
         logoutButton.setOnClickListener(v -> {
             AuthManager.Companion.getInstance(requireContext()).logout(result -> {
-                // Navigate back to login
-                startActivity(new Intent(requireContext(), LoginActivity.class)
+                // Navigate back to laucnher
+                startActivity(new Intent(requireContext(), LauncherActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+                return Unit.INSTANCE;
             });
         });
 
