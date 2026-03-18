@@ -36,6 +36,8 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
+
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -54,7 +56,8 @@ import com.group5.gue.data.model.Role;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import java.util.Objects;
-
+import android.widget.ArrayAdapter;
+import android.content.Context;
 /**
  * A simple {@link Fragment} subclass for displaying the TU/e map with markers.
  */
@@ -76,9 +79,16 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private Button btnFloorUp, btnFloorDown;
     private TextView tvFloorLevel;
     private boolean mapReady = false;
+    private AutoCompleteTextView buildingSearch;
+    private List<String> buildingNames = new ArrayList<>();
+    private final List<Marker> activeMarkers = new ArrayList<>();
 
     UserRepository userRepository = UserRepository.Companion.getInstance();
     User user;
+
+    private List<Marker> getActiveMarkers() {
+        return activeMarkers;
+    }
 
     public MapFragment() {
         user = userRepository.getCachedUser();
@@ -156,7 +166,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         // Role check
         FloatingActionButton addAnnotationBtn = view.findViewById(R.id.add_annotation);
 
-
         // Check for ADMIN role
         if (isAdmin()) {
             addAnnotationBtn.setVisibility(View.VISIBLE);
@@ -197,6 +206,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         fetchAnnotations();
 
         updateFloorLevel(null, null);
+
+        buildingSearch = view.findViewById(R.id.building_search);
+        setupBuildingSearch();
 
         // Centers on TU/e when button is clicked
         btnCenterTue.setOnClickListener(v -> {
@@ -310,12 +322,86 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             public kotlin.Unit invoke(List<Annotation> annotations) {
                 annotationList = annotations;
 
-                // Only update markers if map is ready
                 if (mapReady) {
                     updateFloorLevel(null, null);
                 }
 
+                // Populate building search suggestions
+                buildingNames.clear();
+                for (Annotation a : annotations) {
+                    if (a.getLevel() == null && a.getBuilding() != null
+                            && !buildingNames.contains(a.getBuilding())) {
+                        buildingNames.add(a.getBuilding());
+                    }
+                }
+                setupBuildingSearch();
+
                 return kotlin.Unit.INSTANCE;
+            }
+        });
+    }
+
+    /**
+     * Sets up the building search bar with autocomplete suggestions drawn from
+     * {@link #annotationList}. Only top-level building annotations (those with
+     * no floor level) are included as suggestions.
+     * <p>
+     * When the user selects a suggestion, the map centers on the building and
+     * opens its info window, mimicking a manual marker tap. The search bar is
+     * cleared after selection.
+     */
+    private void setupBuildingSearch() {
+        if (buildingSearch == null || buildingNames.isEmpty()) return;
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                requireContext(),
+                android.R.layout.simple_dropdown_item_1line,
+                buildingNames
+        );
+        buildingSearch.setAdapter(adapter);
+
+        buildingSearch.setOnItemClickListener((parent, view, position, id) -> {
+            String selected = (String) parent.getItemAtPosition(position);
+            buildingSearch.setText("");
+            buildingSearch.clearFocus();
+
+            // Hide keyboard
+            android.view.inputmethod.InputMethodManager imm =
+                    (android.view.inputmethod.InputMethodManager)
+                            requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(buildingSearch.getWindowToken(), 0);
+
+            // Find the annotation for the selected building
+            if (annotationList == null) return;
+            for (Annotation annotation : annotationList) {
+                if (selected.equalsIgnoreCase(annotation.getBuilding())
+                        && annotation.getLevel() == null) {
+
+                    LatLng pos = new LatLng(annotation.getLatitude(), annotation.getLongitude());
+
+                    // Switch to buildings floor and center
+                    currentFloor = -2;
+                    updateFloorLevel(null, null);
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 18f),
+                            new GoogleMap.CancelableCallback() {
+                                @Override
+                                public void onFinish() {
+                                    // Open info window after camera settles
+                                    if (mMap != null) {
+                                        for (com.google.android.gms.maps.model.Marker m :
+                                                getActiveMarkers()) {
+                                            if (selected.equalsIgnoreCase(m.getTitle())) {
+                                                m.showInfoWindow();
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                @Override
+                                public void onCancel() {}
+                            });
+                    break;
+                }
             }
         });
     }
@@ -354,7 +440,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private void showMarkersForFloor(String withoutBuilding, String withoutRoom) {
         if (mMap == null || annotationList == null) return;
 
-        mMap.clear(); // remove previous markers
+        mMap.clear();
+        activeMarkers.clear();
 
         for (Annotation annotation : annotationList) {
             String levelStr = annotation.getLevel();
@@ -372,6 +459,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                         )));
                 if (marker != null) {
                     marker.setTag(annotation.getId());
+                    activeMarkers.add(marker);
                 }
                 continue;
             }

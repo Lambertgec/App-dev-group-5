@@ -65,6 +65,12 @@
         libero vel nunc consequat, quis tincidunt nisl eleifend. Cras bibendum enim a justo luctus
         vestibulum. Fusce dictum libero quis erat maximus, vitae volutpat diam dignissim.
     </string>
+    <string name="search_building">Search building...</string>
+    <string name="center_tu_e">Center TU/e</string>
+    <string name="checking_calendar">Checking calendar...</string>
+    <string name="down">⬇</string>
+    <string name="level_1">Level 1</string>
+    <string name="up">⬆</string>
 
 
 </resources>
