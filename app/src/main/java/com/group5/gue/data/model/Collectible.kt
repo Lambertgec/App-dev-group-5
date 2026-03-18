@@ -8,8 +8,8 @@ import kotlinx.serialization.Serializable
 data class Collectible(
     val id: Int = 0,
     @SerialName("creator_id")
-    val creatorId: String,
-    val name: String,
+    val creatorId: String? = null   ,
+    val name: String = "",
     val score: Int = 0,
     val description: String? = null,
     @SerialName("created_at")

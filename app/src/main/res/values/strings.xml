@@ -19,6 +19,8 @@
     <string name="no_event_soon"> There is no event in an hour </string>
     <string name="collectibles_gallery_title">Collectibles</string>
     <string name="collectibles_gallery_subtitle">Tap any image in the grid to see its name and description.</string>
+    <string name="collectibles_user_score">Your score: --</string>
+    <string name="collectibles_user_score_value">Your score: %1$d</string>
     <string name="collectibles_upload_action">Upload collectible</string>
     <string name="collectibles_back_home">Back</string>
     <string name="collectibles_loading">Loading collectibles…</string>
@@ -27,14 +29,18 @@
     <string name="collectible_details_title">Selected collectible</string>
     <string name="collectible_details_placeholder">Choose an item from the grid to inspect it.</string>
     <string name="collectible_no_description">No description was provided for this collectible.</string>
+    <string name="collectible_cost">Cost: %1$d points</string>
     <string name="upload_collectible_title">Upload a collectible</string>
     <string name="upload_collectible_subtitle">Pick an image, give it a name, and publish it to the shared gallery.</string>
     <string name="upload_pick_image">Choose image</string>
     <string name="upload_image_selected">Image selected</string>
     <string name="upload_name_hint">Collectible name</string>
+    <string name="upload_score_hint">Score cost</string>
     <string name="upload_description_hint">Description</string>
     <string name="upload_publish">Publish collectible</string>
     <string name="upload_name_required">Enter a collectible name.</string>
+    <string name="upload_score_required">Enter a score cost for this collectible.</string>
+    <string name="upload_score_invalid">Score must be a non-negative number.</string>
     <string name="upload_image_required">Choose an image before publishing.</string>
     <string name="upload_creator_missing">Unable to identify the current user.</string>
     <string name="upload_read_failed">Unable to read the selected image.</string>

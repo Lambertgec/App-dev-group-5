@@ -3,19 +3,14 @@ package com.group5.gue.data.collectible
 import android.util.Log
 import com.group5.gue.api.BaseRepository
 import com.group5.gue.api.fetchAll
-import com.group5.gue.api.fetchList
 import com.group5.gue.api.insert
 import com.group5.gue.data.Result
 import com.group5.gue.data.model.Collectible
-import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 
 
 /**
@@ -54,7 +49,7 @@ class CollectibleRepository private constructor() : BaseRepository {
         }
 
         return try {
-            insert<Collectible>(collectible).let { Result.Success(it) }
+            insert<Collectible, Collectible>(collectible).let { Result.Success(it) }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to insert collectible", e)
             Result.Error(Exception("Failed to save collectible", e))

@@ -14,11 +14,9 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.textfield.TextInputEditText
-import com.group5.gue.data.auth.AuthManager
 import com.group5.gue.data.Result
 import com.group5.gue.data.collectible.CollectibleRepository
 import com.group5.gue.data.model.Collectible
-import com.group5.gue.data.user.UserRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -40,6 +38,7 @@ class UploadCollectibleFragment : Fragment(R.layout.fragment_upload_collectible)
     private lateinit var previewImageView: ImageView
     private lateinit var imageStatusView: TextView
     private lateinit var nameInput: TextInputEditText
+    private lateinit var scoreInput: TextInputEditText
     private lateinit var descriptionInput: TextInputEditText
     private lateinit var progressBar: ProgressBar
     private lateinit var publishButton: Button
@@ -79,6 +78,7 @@ class UploadCollectibleFragment : Fragment(R.layout.fragment_upload_collectible)
         previewImageView = view.findViewById(R.id.uploadPreviewImage)
         imageStatusView = view.findViewById(R.id.uploadImageStatus)
         nameInput = view.findViewById(R.id.collectibleNameInput)
+        scoreInput = view.findViewById(R.id.collectibleScoreInput)
         descriptionInput = view.findViewById(R.id.collectibleDescriptionInput)
         progressBar = view.findViewById(R.id.uploadProgressBar)
         publishButton = view.findViewById(R.id.publishCollectibleButton)
@@ -102,12 +102,24 @@ class UploadCollectibleFragment : Fragment(R.layout.fragment_upload_collectible)
 
     private fun submitCollectible() {
         val name = nameInput.text?.toString()?.trim().orEmpty()
+        val scoreRaw = scoreInput.text?.toString()?.trim().orEmpty()
         val description = descriptionInput.text?.toString()?.trim()?.takeIf { it.isNotBlank() }
         val imageBytes = selectedImageBytes
         val fileExtension = selectedImageExtension
 
         if (name.isBlank()) {
             nameInput.error = getString(R.string.upload_name_required)
+            return
+        }
+
+        if (scoreRaw.isBlank()) {
+            scoreInput.error = getString(R.string.upload_score_required)
+            return
+        }
+
+        val score = scoreRaw.toIntOrNull()
+        if (score == null || score < 0) {
+            scoreInput.error = getString(R.string.upload_score_invalid)
             return
         }
 
@@ -124,8 +136,9 @@ class UploadCollectibleFragment : Fragment(R.layout.fragment_upload_collectible)
         viewLifecycleOwner.lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) {
                 val collectible = Collectible(
-                    creatorId = "",
+                    creatorId = null,
                     name = name,
+                    score = score,
                     description = description
                 )
                 repository.insertCollectible(
@@ -169,6 +182,7 @@ class UploadCollectibleFragment : Fragment(R.layout.fragment_upload_collectible)
         publishButton.isEnabled = !isUploading
         chooseImageButton.isEnabled = !isUploading
         nameInput.isEnabled = !isUploading
+        scoreInput.isEnabled = !isUploading
         descriptionInput.isEnabled = !isUploading
         if (isUploading) {
             Toast.makeText(requireContext(), R.string.upload_in_progress, Toast.LENGTH_SHORT).show()

@@ -16,10 +16,14 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.group5.gue.data.collectible.CollectibleRepository;
 import com.group5.gue.data.model.Collectible;
+import com.group5.gue.data.model.User;
+import com.group5.gue.data.user.UserRepository;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import kotlin.Unit;
 
@@ -29,13 +33,17 @@ import kotlin.Unit;
 public class CollectiblesGalleryFragment extends Fragment {
 
     private final CollectibleRepository repository = CollectibleRepository.Companion.getInstance();
+    private final UserRepository userRepository = UserRepository.Companion.getInstance();
 
     private CollectibleGridAdapter adapter;
     private ProgressBar progressBar;
     private TextView emptyView;
+    private TextView userScoreView;
     private View detailCard;
     private TextView detailNameView;
+    private TextView detailCostView;
     private TextView detailDescriptionView;
+    private Set<Integer> ownedCollectibleIds = new HashSet<>();
 
     public CollectiblesGalleryFragment() {
         super(R.layout.fragment_collectibles_gallery);
@@ -49,8 +57,10 @@ public class CollectiblesGalleryFragment extends Fragment {
 
         progressBar = view.findViewById(R.id.collectiblesProgressBar);
         emptyView = view.findViewById(R.id.collectiblesEmptyView);
+        userScoreView = view.findViewById(R.id.collectiblesUserScore);
         detailCard = view.findViewById(R.id.collectibleDetailsCard);
         detailNameView = view.findViewById(R.id.collectibleDetailName);
+        detailCostView = view.findViewById(R.id.collectibleDetailCost);
         detailDescriptionView = view.findViewById(R.id.collectibleDetailDescription);
 
         RecyclerView recyclerView = view.findViewById(R.id.collectiblesRecyclerView);
@@ -77,7 +87,14 @@ public class CollectiblesGalleryFragment extends Fragment {
         );
 
         detailCard.setVisibility(View.GONE);
+        refreshUserScore();
         loadCollectibles(false);
+    }
+
+    private void refreshUserScore() {
+        User cachedUser = userRepository.getCachedUser();
+        int userScore = cachedUser != null ? cachedUser.getScore() : 0;
+        userScoreView.setText(getString(R.string.collectibles_user_score_value, userScore));
     }
 
     /**
@@ -91,23 +108,45 @@ public class CollectiblesGalleryFragment extends Fragment {
     private void loadCollectibles(boolean showUploadToast) {
         progressBar.setVisibility(View.VISIBLE);
         emptyView.setVisibility(View.GONE);
+        detailCard.setVisibility(View.GONE);
 
         repository.getAllCollectibles(collectibles -> {
-            progressBar.setVisibility(View.GONE);
+            User cachedUser = userRepository.getCachedUser();
+            String userId = cachedUser != null ? cachedUser.getId() : null;
 
-            List<Collectible> sortedCollectibles = new ArrayList<>(collectibles);
-            sortedCollectibles.sort(Comparator.comparingLong(Collectible::getId).reversed());
-
-            adapter.submitItems(sortedCollectibles);
-            emptyView.setText(R.string.collectibles_empty);
-            emptyView.setVisibility(sortedCollectibles.isEmpty() ? View.VISIBLE : View.GONE);
-
-            if (showUploadToast) {
-                Toast.makeText(requireContext(), R.string.upload_success, Toast.LENGTH_SHORT).show();
+            if (userId == null || userId.trim().isEmpty()) {
+                applyCollectiblesState(collectibles, new HashSet<>(), showUploadToast);
+                return Unit.INSTANCE;
             }
 
+            userRepository.getOwnedCollectibleIds(userId, ownedIds -> {
+                applyCollectiblesState(collectibles, ownedIds, showUploadToast);
+                return Unit.INSTANCE;
+            });
             return Unit.INSTANCE;
         });
+    }
+
+    private void applyCollectiblesState(
+        List<Collectible> collectibles,
+        Set<Integer> ownedIds,
+        boolean showUploadToast
+    ) {
+        progressBar.setVisibility(View.GONE);
+
+        ownedCollectibleIds = new HashSet<>(ownedIds);
+        List<Collectible> sortedCollectibles = new ArrayList<>(collectibles);
+        sortedCollectibles.sort(Comparator.comparingLong(Collectible::getId).reversed());
+
+        adapter.setOwnedCollectibleIds(ownedCollectibleIds);
+        adapter.submitItems(sortedCollectibles);
+
+        emptyView.setText(R.string.collectibles_empty);
+        emptyView.setVisibility(sortedCollectibles.isEmpty() ? View.VISIBLE : View.GONE);
+
+        if (showUploadToast) {
+            Toast.makeText(requireContext(), R.string.upload_success, Toast.LENGTH_SHORT).show();
+        }
     }
 
     /**
@@ -118,6 +157,7 @@ public class CollectiblesGalleryFragment extends Fragment {
     private void showDetails(Collectible collectible) {
         detailCard.setVisibility(View.VISIBLE);
         detailNameView.setText(collectible.getName());
+        detailCostView.setText(getString(R.string.collectible_cost, collectible.getScore()));
 
 
         String description = collectible.getDescription();

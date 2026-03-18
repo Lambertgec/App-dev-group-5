@@ -48,6 +48,17 @@
         android:textColor="@color/black"
         android:textSize="14sp" />
 
+    <TextView
+        android:id="@+id/collectiblesUserScore"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/collectibles_user_score"
+        android:textColor="@color/black"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        tools:text="Your score: 120" />
+
     <ProgressBar
         android:id="@+id/collectiblesProgressBar"
         style="?android:attr/progressBarStyle"
@@ -107,6 +118,16 @@
                 android:textSize="22sp"
                 android:textStyle="bold"
                 tools:text="Card 1" />
+
+            <TextView
+                android:id="@+id/collectibleDetailCost"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/black"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                tools:text="Cost: 20 points" />
 
             <TextView
                 android:id="@+id/collectibleDetailDescription"
