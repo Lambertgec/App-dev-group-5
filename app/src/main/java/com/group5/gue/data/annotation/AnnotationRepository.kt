@@ -1,5 +1,6 @@
 package com.group5.gue.data.annotation
 
+import android.util.Log
 import com.group5.gue.api.BaseRepository
 import com.group5.gue.api.delete
 import com.group5.gue.api.fetchAll
@@ -8,6 +9,8 @@ import com.group5.gue.api.fetchSingle
 import com.group5.gue.api.insert
 import com.group5.gue.api.update
 import com.group5.gue.data.model.Annotation
+import com.group5.gue.data.model.AnnotationInsert
+import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -54,8 +57,24 @@ class AnnotationRepository private constructor() : BaseRepository {
 
     fun create(annotation: Annotation, callback: (Annotation?) -> Unit) {
         scope.launch {
-            val created = insert(annotation)
-            withContext(Dispatchers.Main) { callback(created) }
+            val insertPayload = AnnotationInsert(
+                building = annotation.building,
+                roomName = annotation.roomName,
+                level = annotation.level,
+                latitude = annotation.latitude,
+                longitude = annotation.longitude,
+                creatorId = annotation.creatorId
+            )
+            try {
+                val created = client.postgrest
+                    .from(tableName)
+                    .insert(insertPayload) { select() }
+                    .decodeSingle<Annotation>()
+                withContext(Dispatchers.Main) { callback(created) }
+            } catch (e: Exception) {
+                Log.e("ANNOTATION_CREATE", "Full error: ${e::class.simpleName}: ${e.message}", e)
+                withContext(Dispatchers.Main) { callback(null) }
+            }
         }
     }
 

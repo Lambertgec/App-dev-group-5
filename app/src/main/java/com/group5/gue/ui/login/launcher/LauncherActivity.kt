@@ -47,11 +47,7 @@ class LauncherActivity : AppCompatActivity() {
         userRepository.fetchAndCacheUser(userId) { user ->
             Log.d("LauncherActivity", "User fetched: $user for userId: $userId")
             if (user != null) {
-                if(user.isAdmin) {
-                    startActivity(Intent(this, AdminMainActivity::class.java))
-                } else {
-                    startActivity(Intent(this, MainActivity::class.java))
-                }
+                startActivity(Intent(this, MainActivity::class.java))
                 finish()
             } else {
                 loginLauncher.launch(Intent(this, LoginActivity::class.java))

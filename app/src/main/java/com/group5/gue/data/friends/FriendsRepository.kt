@@ -132,7 +132,7 @@ class FriendsRepository private constructor() : BaseRepository {
                         createdAt = sdf.format(Date())
                     )
 
-                    val result = insert(newFollow)
+                    val result = insert<Follow, Follow>(newFollow)
                     withContext(Dispatchers.Main) {
                         if (result != null) callback(true, "Followed ${profile.displayName}!")
                         else callback(false, "Failed to update database")

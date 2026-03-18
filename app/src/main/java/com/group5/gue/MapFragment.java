@@ -126,8 +126,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
 
         // Check for ADMIN role
-        if (user != null && user.getRole() == Role.USER) {
-            // TODO: change to admin
+        if (isAdmin()) {
             addAnnotationBtn.setVisibility(View.VISIBLE);
             addAnnotationBtn.setOnClickListener(v -> {
                 isAddingMarker = true;
@@ -235,8 +234,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 snippet.setText(marker.getSnippet());
 
                 // Show 'x' only for admins
-                if (user != null && user.getRole() == Role.USER) {
-                    // TODO: change to admin
+                if (isAdmin()) {
                     deleteIcon.setVisibility(View.VISIBLE);
                 } else {
                     deleteIcon.setVisibility(View.GONE);
@@ -333,13 +331,16 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             if ((levelStr == null) && currentFloor == -2 &&
                     !Objects.equals(annotation.getBuilding(), withoutBuilding)) {
                 LatLng pos = new LatLng(annotation.getLatitude(), annotation.getLongitude());
-                mMap.addMarker(new MarkerOptions()
+                Marker marker = mMap.addMarker(new MarkerOptions()
                         .position(pos)
                         .title(annotation.getBuilding())
                         .snippet(annotation.getRoomName())
                         .icon(BitmapDescriptorFactory.defaultMarker(
                                 BitmapDescriptorFactory.HUE_BLUE
                         )));
+                if (marker != null) {
+                    marker.setTag(annotation.getId());
+                }
                 continue;
             }
 
@@ -352,13 +353,16 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                                     Objects.equals(annotation.getRoomName(), withoutRoom))) {
                         LatLng pos
                                 = new LatLng(annotation.getLatitude(), annotation.getLongitude());
-                        mMap.addMarker(new MarkerOptions()
+                        Marker marker = mMap.addMarker(new MarkerOptions()
                                 .position(pos)
                                 .title(annotation.getBuilding())
                                 .snippet(annotation.getRoomName())
                                 .icon(BitmapDescriptorFactory.defaultMarker(
                                         BitmapDescriptorFactory.HUE_BLUE
                                 )));
+                        if (marker != null) {
+                            marker.setTag(annotation.getId());
+                        }
                     }
                 } catch (NumberFormatException e) {
                     // Skip rows with invalid level data
@@ -422,13 +426,16 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 18f));
 
-        mMap.addMarker(new MarkerOptions()
+        Marker marker = mMap.addMarker(new MarkerOptions()
                 .position(pos)
                 .title(currentLocation.getBuilding())
                 .snippet(currentLocation.getRoomName())
                 .icon(BitmapDescriptorFactory.defaultMarker(
                         BitmapDescriptorFactory.HUE_RED
                 )));
+        if (marker != null) {
+            marker.setTag(currentLocation.getId());
+        }
     }
 
     /* ------------------------------ Events Bar Functions ------------------------------------ */
@@ -503,13 +510,28 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     /* ------------------------------- Admin view Functions ------------------------------------ */
+    /**
+     * Sets up the map interaction listeners for admin users.
+     * Configures two listeners:
+     * <ul>
+     *   <li>A map click listener that, when the admin is in marker-adding mode
+     *       ({@link #isAddingMarker} is true), dismisses the instruction snackbar
+     *       and opens the add marker dialog at the tapped location.</li>
+     *   <li>An info window click listener that prompts the admin to confirm
+     *       deletion of the tapped marker, then removes it from both the map
+     *       and the database via {@link AnnotationRepository#delete}.</li>
+     * </ul>
+     * This method should only be called after the map is ready (i.e. from
+     * {@link #onMapReady}).
+     */
     private void setupAdminListeners() {
         mMap.setOnMapClickListener(latLng -> {
-            if (isAddingMarker) {
-                // Dismiss the instruction when location is chosen
+            if (isAdmin() && isAddingMarker) {
+
                 if (instructionSnackbar != null) {
                     instructionSnackbar.dismiss();
                 }
+
                 showAddMarkerDialog(latLng);
                 isAddingMarker = false;
             }
@@ -517,14 +539,30 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         // Delete logic: Click a marker's info window to delete it (Admin only)
         mMap.setOnInfoWindowClickListener(marker -> {
-            if (user != null && user.getRole() == Role.USER) {
-                //TODO: change admin
+            if (isAdmin()) {
                 new AlertDialog.Builder(getContext())
                         .setTitle("Delete Location")
                         .setMessage("Are you sure you want to delete " + marker.getTitle() + "?")
                         .setPositiveButton("Delete", (dialog, which) -> {
-                            // TODO: Call Supabase delete logic here
-                            marker.remove();
+                            Long id = (Long) marker.getTag();
+
+                            if (id != null) {
+                                repository.delete(id, success -> {
+                                    if (success) {
+                                        marker.remove();
+                                        fetchAnnotations(); // refresh from DB
+
+                                        Toast.makeText(getContext(),
+                                                "Deleted from database",
+                                                Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        Toast.makeText(getContext(),
+                                                "Delete failed",
+                                                Toast.LENGTH_SHORT).show();
+                                    }
+                                    return null;
+                                });
+                            }
                             Toast.makeText(getContext(), "Marker removed", Toast.LENGTH_SHORT).show();
                         })
                         .setNegativeButton("Cancel", null)
@@ -533,6 +571,19 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         });
     }
 
+    /**
+     * Displays a dialog allowing an admin to save a new location marker at the
+     * given coordinates.
+     * The dialog prompts the admin for a building name and an optional room name
+     * (snippet). On confirmation, a new {@link Annotation} is constructed with
+     * the current floor level and the authenticated user's ID as the creator,
+     * then persisted to the database via {@link AnnotationRepository#create}.
+     * If the insert succeeds, the marker is added to the map and the annotation
+     * list is refreshed. If it fails, an error is logged and a toast is shown.
+     *
+     * @param latLng the coordinates on the map where the new marker should be placed,
+     *               as selected by the admin's tap
+     */
     private void showAddMarkerDialog(LatLng latLng) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setTitle("Add New Location");
@@ -549,23 +600,65 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             String snippet = inputSnippet.getText().toString();
 
             if (!name.isEmpty()) {
-                mMap.addMarker(new MarkerOptions()
-                        .position(latLng)
-                        .title(name)
-                        .snippet(snippet)
-                        .icon(BitmapDescriptorFactory.defaultMarker(
-                                BitmapDescriptorFactory.HUE_BLUE
-                        )));
+                Annotation newAnnotation = new Annotation(
+                    0L,                                                     // id
+                    null,                                                      // createdAt
+                    name,                                                      // building
+                    snippet,                                                   // roomName
+                    currentFloor == -2 ? null : String.valueOf(currentFloor), // level
+                    latLng.latitude,                                           // latitude
+                    latLng.longitude,                                          // longitude
+                    user.getId()                                               // creatorId
+                );
 
-                // TODO: Save to Supabase
+                repository.create(newAnnotation, created -> {
+                    if (created != null) {
+
+                        Marker marker = mMap.addMarker(new MarkerOptions()
+                                .position(latLng)
+                                .title(created.getBuilding())
+                                .snippet(created.getRoomName())
+                        );
+
+                        if (marker != null) {
+                            marker.setTag(created.getId());
+                        }
+
+                        Toast.makeText(getContext(),
+                                "Saved to database",
+                                Toast.LENGTH_SHORT).show();
+
+                        fetchAnnotations(); // refresh
+
+                    } else {
+
+                        Log.e("MAP_ADMIN", "Create failed. Annotation attempted: "
+                                + newAnnotation.getBuilding()
+                                + ", creatorId=" + newAnnotation.getCreatorId());
+
+                        Toast.makeText(getContext(),
+                                "Save failed",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                    return null;
+                });
+
                 Log.d("MAP_ADMIN", "Saving " + name + " at " + latLng.toString());
-                Toast.makeText(getContext(), name + " added successfully",
-                        Toast.LENGTH_SHORT).show();
             }
         });
         builder.setNegativeButton("Cancel",
                 (dialog, which) -> dialog.cancel());
 
         builder.show();
+    }
+
+    /**
+     * Returns whether the currently authenticated user has the {@link Role#ADMIN} role.
+     *
+     * @return {@code true} if the user is non-null and has admin privileges,
+     *         {@code false} otherwise
+     */
+    private boolean isAdmin() {
+        return user != null && user.getRole() == Role.ADMIN;
     }
 }

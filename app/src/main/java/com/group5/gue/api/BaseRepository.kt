@@ -53,12 +53,14 @@ suspend inline fun <reified T : Any> BaseRepository.fetchAll(): List<T> {
     }
 }
 
-suspend inline fun <reified T : Any> BaseRepository.insert(item: T): T? {
+suspend inline fun <reified TInsert : Any, reified TResult : Any> BaseRepository.insert(
+    item: TInsert
+): TResult? {
     return try {
         client.postgrest
             .from(tableName)
             .insert(item) { select() }
-            .decodeSingle<T>()
+            .decodeSingle<TResult>()
     } catch (e: Exception) {
         Log.e(tag, "Error inserting into $tableName", e)
         null
