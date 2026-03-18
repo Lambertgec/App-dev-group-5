@@ -39,7 +39,7 @@ public class ProfileActivity extends AppCompatActivity {
         }
         
         loadProfileData();
-        setupChangeUsernameButton();
+        setupButtons();
     }
 
     private void loadProfileData() {
@@ -71,10 +71,15 @@ public class ProfileActivity extends AppCompatActivity {
         }
     }
 
-    private void setupChangeUsernameButton() {
+    private void setupButtons() {
         Button changeUsernameButton = findViewById(R.id.changeUsernameButton);
         if (changeUsernameButton != null) {
             changeUsernameButton.setOnClickListener(v -> showChangeUsernameDialog());
+        }
+
+        Button deleteAccountButton = findViewById(R.id.deleteAccountButton);
+        if (deleteAccountButton != null) {
+            deleteAccountButton.setOnClickListener(v -> showDeleteAccountDialog());
         }
     }
 
@@ -91,6 +96,39 @@ public class ProfileActivity extends AppCompatActivity {
             String newUsername = input.getText().toString().trim();
             if (!newUsername.isEmpty() && currentUser != null) {
                 updateUsername(newUsername);
+            }
+        });
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+
+        builder.show();
+    }
+
+    private void showDeleteAccountDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Delete Account");
+        builder.setMessage("Are you sure you want to delete your account? This action cannot be undone.");
+
+        builder.setPositiveButton("Delete", (dialog, which) -> {
+            if (currentUser != null) {
+                
+                userRepository.deleteAccount(result -> {
+                    if (result instanceof Result.Success) {
+                        Toast.makeText(
+                            ProfileActivity.this,
+                            "Account deleted successfully",
+                            Toast.LENGTH_SHORT
+                        ).show();
+                        finish(); // Close the activity after deletion
+                    } else if (result instanceof Result.Error) {
+                        Exception error = ((Result.Error<Void>) result).getError();
+                        Toast.makeText(
+                            ProfileActivity.this,
+                            "Failed to delete account: " + error.getMessage(),
+                            Toast.LENGTH_SHORT
+                        ).show();
+                    }
+                    return kotlin.Unit.INSTANCE;
+                });
             }
         });
         builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
