@@ -25,6 +25,7 @@ preference = "1.2.0"
 navigationFragment = "2.6.0"
 navigationUi = "2.6.0"
 workManager = "2.9.0"
+glide = "4.16.0"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -45,6 +46,7 @@ googleid = { module = "com.google.android.libraries.identity.googleid:googleid",
 postgrest-kt = {module = "io.github.jan-tennert.supabase:postgrest-kt"}
 auth-kt = { module = "io.github.jan-tennert.supabase:auth-kt" }
 supabase-bom = { module = "io.github.jan-tennert.supabase:bom", version.ref = "bom" }
+storage-kt = {module = "io.github.jan-tennert.supabase:storage-kt" } 
 
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor"}
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
@@ -65,6 +67,7 @@ androidx-recyclerview = { group = "androidx.recyclerview", name = "recyclerview"
 androidx-preference = { group = "androidx.preference", name = "preference", version.ref = "preference" }
 androidx-navigation-fragment = { group = "androidx.navigation", name = "navigation-fragment", version.ref = "navigationFragment" }
 androidx-navigation-ui = { group = "androidx.navigation", name = "navigation-ui", version.ref = "navigationUi" }
+glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "glide" }
 
 
 [plugins]

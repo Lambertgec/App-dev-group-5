@@ -66,6 +66,7 @@ dependencies {
     implementation(platform(libs.supabase.bom))
     implementation(libs.auth.kt)
     implementation(libs.postgrest.kt)
+    implementation(libs.storage.kt)
 
 
     implementation(libs.ktor.client.okhttp)
@@ -87,6 +88,7 @@ dependencies {
     implementation(libs.androidx.navigation.fragment)
     implementation(libs.androidx.navigation.ui)
     implementation(libs.androidx.work.runtime)
+    implementation(libs.glide)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
