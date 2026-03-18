@@ -6,10 +6,11 @@ import com.group5.gue.api.update
 import com.group5.gue.api.insert
 import com.group5.gue.data.Result
 import com.group5.gue.data.model.User
+import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
+import com.group5.gue.api.HttpHandler
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -98,6 +99,17 @@ class UserRepository private constructor() : BaseRepository {
         } catch (e: Exception) {
             Result.Error(Exception("Failed to update user", e))
         }
+    }
+
+    /**
+     * Deletes the current user's account
+     *
+     * @param callback The callback to handle the result
+     */
+    fun deleteAccount(callback: (Result<Void>) -> Unit) {
+        client.auth.currentSessionOrNull()?.accessToken?.let { accessToken ->
+            HttpHandler().deleteAccount(accessToken, callback)
+        } ?: callback(Result.Error(Exception("No access token available")))
     }
 
     // Convenience function for Java
