@@ -86,6 +86,7 @@ dependencies {
     implementation(libs.androidx.preference)
     implementation(libs.androidx.navigation.fragment)
     implementation(libs.androidx.navigation.ui)
+    implementation(libs.androidx.work.runtime)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

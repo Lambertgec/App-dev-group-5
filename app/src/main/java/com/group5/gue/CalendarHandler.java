@@ -25,6 +25,10 @@ public class CalendarHandler {
         this.contentResolver = activity.getContentResolver();
     }
 
+    public CalendarHandler(ContentResolver contentResolver) {
+        this.contentResolver = contentResolver;
+    }
+
     public ArrayList<String> getCalendars(){
         Uri uri = CalendarContract.Calendars.CONTENT_URI;
 

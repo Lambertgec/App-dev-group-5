@@ -112,73 +112,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
      */
     public void isUserNearLocation(String buildingName, String roomName,
                                    double proximityMeters, Consumer<Boolean> callback) {
-        if (ContextCompat.checkSelfPermission(requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            callback.accept(false);
-            return;
-        }
-
-        Runnable performCheck = () -> {
-            FusedLocationProviderClient fusedLocationClient =
-                    LocationServices.getFusedLocationProviderClient(requireActivity());
-
-            fusedLocationClient.getLastLocation().addOnSuccessListener(location -> {
-                if (location == null) {
-                    callback.accept(false);
-                    return;
-                }
-
-                Annotation target = null;
-
-                // Try exact building + room match first
-                for (Annotation annotation : annotationList) {
-                    if (buildingName.equalsIgnoreCase(annotation.getBuilding()) &&
-                            roomName.equalsIgnoreCase(annotation.getRoomName())) {
-                        target = annotation;
-                        break;
-                    }
-                }
-
-                // Fall back to building-only match
-                if (target == null) {
-                    for (Annotation annotation : annotationList) {
-                        if (buildingName.equalsIgnoreCase(annotation.getBuilding())) {
-                            target = annotation;
-                            break;
-                        }
-                    }
-                }
-
-                if (target == null) {
-                    callback.accept(false);
-                    return;
-                }
-
-                float[] results = new float[1];
-                android.location.Location.distanceBetween(
-                        location.getLatitude(), location.getLongitude(),
-                        target.getLatitude(), target.getLongitude(),
-                        results
-                );
-
-                callback.accept(results[0] <= proximityMeters);
-            });
-        };
-
-        // If annotations are already loaded, check immediately
-        // Otherwise fetch them first, then check
-        if (annotationList != null && !annotationList.isEmpty()) {
-            performCheck.run();
-        } else {
-            repository.getAll(new kotlin.jvm.functions.Function1<List<Annotation>, kotlin.Unit>() {
-                @Override
-                public kotlin.Unit invoke(List<Annotation> annotations) {
-                    annotationList = annotations;
-                    performCheck.run();
-                    return kotlin.Unit.INSTANCE;
-                }
-            });
-        }
+        new ProximityChecker(requireContext())
+                .check(buildingName, roomName, proximityMeters, annotationList, callback);
     }
 
     /* -------------------------------- Override Functions ------------------------------------- */

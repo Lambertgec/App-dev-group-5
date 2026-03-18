@@ -1,10 +1,19 @@
 package com.group5.gue;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
+
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import androidx.appcompat.widget.Toolbar;
 
@@ -16,7 +25,10 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+
+import com.group5.gue.data.attendance.AttendanceRepository;
 import com.group5.gue.data.auth.AuthManager;
+import com.group5.gue.data.model.AttendanceRecord;
 import com.group5.gue.ui.login.launcher.LauncherActivity;
 
 import com.group5.gue.databinding.ActivityMainBinding;
@@ -24,8 +36,9 @@ import com.group5.gue.databinding.ActivityMainBinding;
 import kotlin.Unit;
 
 public class MainActivity extends AppCompatActivity {
-
-
+    PeriodicWorkRequest attendanceWork =
+            new PeriodicWorkRequest.Builder(AttendanceCheckWorker.class, 15, TimeUnit.MINUTES)
+                    .build();
     ActivityMainBinding binding;
 
     @Override
@@ -38,13 +51,26 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        String savedCalendar = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                .getString("selected_calendar", null);
+
+        if (savedCalendar != null) {
+            CalendarHandler.selectedCalendar = savedCalendar;
+        }
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "attendance_check",
+                androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+                attendanceWork
+        );
+
         switchFragmant(new HomeFragment());
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main),
+                (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
-        
 
         binding.bottomNavigationView.setOnItemSelectedListener(menuItem -> {
            if ((menuItem.getItemId()) == R.id.home) {
