@@ -2,6 +2,9 @@ package com.group5.gue.data.user
 
 import com.group5.gue.api.BaseRepository
 import com.group5.gue.api.fetchSingle
+import com.group5.gue.api.update
+import com.group5.gue.api.insert
+import com.group5.gue.data.Result
 import com.group5.gue.data.model.User
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,31 +31,52 @@ class UserRepository private constructor() : BaseRepository {
         }
     }
 
+    /**
+     * Creates a new User in the database
+     * 
+     * @param user User data
+     * 
+     * @return Result with the created User or an error if creation fails
+     */
+    suspend fun createUser(user: User): Result<User> {
+        return try {
+            val createdUser = insert<User, User>(user)
+            if (createdUser != null) {
+                Result.Success(createdUser)
+            } else {
+                Result.Error(Exception("Failed to create user"))
+            }
+        } catch (e: Exception) {
+            Result.Error(Exception("Failed to create user", e))
+        }
+    }
+
+    /**
+     * Fetches a User by their ID
+     *
+     * @param userId The ID of the User to fetch
+     * @param cache Whether to cache the fetched User
+     *
+     * @return Result with the fetched User or an error if fetching fails
+     */
+
+    suspend fun fetchUserById(userId: String, cache: Boolean): Result<User> {
+        return try {
+            val user = fetchSingle<User>("id", userId)
+            if (user != null) {
+                if (cache) {
+                    cachedUser = user
+                }
+                Result.Success(user)
+            } else {
+                Result.Error(Exception("User not found"))
+            }
+        } catch (e: Exception) {
+            Result.Error(Exception("Failed to fetch user", e))
+        }
+    }
+
     fun getCachedUser(): User? = cachedUser
 
-    fun setCachedUser(user: User?) { cachedUser = user }
-
-    fun fetchAndCacheUser(userId: String, callback: (User?) -> Unit) {
-        scope.launch {
-            val user = fetchUserWithRetry(userId)
-            cachedUser = user
-            withContext(Dispatchers.Main) { callback(user) }
-        }
-    }
-
-    private suspend fun fetchUserWithRetry(userId: String): User? {
-        val maxAttempts = 5
-        val retryDelayMs = 250L
-
-        repeat(maxAttempts) { attempt ->
-            val user = fetchSingle<User>("id", userId)
-            if (user != null && user.id.isNotBlank()) {
-                return user
-            }
-            if (attempt < maxAttempts - 1) {
-                delay(retryDelayMs)
-            }
-        }
-        return null
-    }
+    fun setCachedUser(user: User?) { cachedUser = user }    
 }
