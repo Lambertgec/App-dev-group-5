@@ -43,7 +43,8 @@ class LauncherActivity : AppCompatActivity() {
             when (result) {
                 is Result.Success -> routeToHome(result.data)
                 is Result.Error -> {
-                    Log.d("LauncherActivity", "No active session, launching login", result.error)
+                    Log.d("LauncherActivity", "No active session, launching login",
+                        result.error)
                     openLogin()
                 }
             }
@@ -57,11 +58,7 @@ class LauncherActivity : AppCompatActivity() {
     // Routes user to the appropriate home screen based on their role
     private fun routeToHome(user: User) {
         Log.d("LauncherActivity", "Authenticated user: ${user.id}, role: ${user.role}")
-        val destination = if (user.role == Role.ADMIN) {
-            AdminMainActivity::class.java
-        } else {
-            MainActivity::class.java
-        }
+        val destination = MainActivity::class.java
         startActivity(Intent(this, destination))
         finish()
     }

@@ -46,6 +46,7 @@ import android.app.AlertDialog;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import com.group5.gue.data.user.UserRepository;
 import com.group5.gue.data.model.User;
@@ -82,6 +83,102 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public MapFragment() {
         user = userRepository.getCachedUser();
         // Required empty public constructor
+    }
+
+    /**
+     * Determines whether the user's current location is within a given proximity
+     * of a specified building and room in the annotation database.
+     * <p>
+     * The method fetches the user's last known location via {@link FusedLocationProviderClient},
+     * looks up the building and room in {@link #annotationList}, then calculates the
+     * straight-line distance between the two points. Returns the result via a callback
+     * since location fetching is asynchronous.
+     * <p>
+     * If the building/room is not found in the database, the user's location cannot
+     * be retrieved, or location permission is not granted, the callback receives {@code false}.
+     * If no exact building+room match is found, falls back to matching building only.
+     * Usage: {@code isUserNearLocation("Atlas", "1.100", 20, isNearby -> {
+     *      Log.d("MAP_PROXIMITY", "isNearby: " + isNearby);
+     *     });}
+     *
+     * @param buildingName    the name of the building to check proximity to,
+     *                        matched case-insensitively against {@link Annotation#getBuilding()}
+     * @param roomName        the room name within the building, matched case-insensitively
+     *                        against {@link Annotation#getRoomName()}
+     * @param proximityMeters the radius in meters within which the user is considered
+     *                        to be at the location
+     * @param callback        receives {@code true} if the user is within {@code proximityMeters}
+     *                        of the specified location, {@code false} otherwise
+     */
+    public void isUserNearLocation(String buildingName, String roomName,
+                                   double proximityMeters, Consumer<Boolean> callback) {
+        if (ContextCompat.checkSelfPermission(requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            callback.accept(false);
+            return;
+        }
+
+        Runnable performCheck = () -> {
+            FusedLocationProviderClient fusedLocationClient =
+                    LocationServices.getFusedLocationProviderClient(requireActivity());
+
+            fusedLocationClient.getLastLocation().addOnSuccessListener(location -> {
+                if (location == null) {
+                    callback.accept(false);
+                    return;
+                }
+
+                Annotation target = null;
+
+                // Try exact building + room match first
+                for (Annotation annotation : annotationList) {
+                    if (buildingName.equalsIgnoreCase(annotation.getBuilding()) &&
+                            roomName.equalsIgnoreCase(annotation.getRoomName())) {
+                        target = annotation;
+                        break;
+                    }
+                }
+
+                // Fall back to building-only match
+                if (target == null) {
+                    for (Annotation annotation : annotationList) {
+                        if (buildingName.equalsIgnoreCase(annotation.getBuilding())) {
+                            target = annotation;
+                            break;
+                        }
+                    }
+                }
+
+                if (target == null) {
+                    callback.accept(false);
+                    return;
+                }
+
+                float[] results = new float[1];
+                android.location.Location.distanceBetween(
+                        location.getLatitude(), location.getLongitude(),
+                        target.getLatitude(), target.getLongitude(),
+                        results
+                );
+
+                callback.accept(results[0] <= proximityMeters);
+            });
+        };
+
+        // If annotations are already loaded, check immediately
+        // Otherwise fetch them first, then check
+        if (annotationList != null && !annotationList.isEmpty()) {
+            performCheck.run();
+        } else {
+            repository.getAll(new kotlin.jvm.functions.Function1<List<Annotation>, kotlin.Unit>() {
+                @Override
+                public kotlin.Unit invoke(List<Annotation> annotations) {
+                    annotationList = annotations;
+                    performCheck.run();
+                    return kotlin.Unit.INSTANCE;
+                }
+            });
+        }
     }
 
     /* -------------------------------- Override Functions ------------------------------------- */
