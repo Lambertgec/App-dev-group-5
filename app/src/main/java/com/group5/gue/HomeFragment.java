@@ -82,17 +82,7 @@ public class HomeFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
-        Button logoutButton = view.findViewById(R.id.logout_button);
-        logoutButton.setOnClickListener(v -> {
-            AuthManager.Companion.getInstance(requireContext()).logout(result -> {
-                // Navigate back to laucnher
-                startActivity(new Intent(requireContext(), LauncherActivity.class)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
-                return Unit.INSTANCE;
-            });
-        });
-
+        
         Button collectiblesButton = view.findViewById(R.id.collectiblesButton);
         //collectiblesButton.setVisibility(View.VISIBLE);
         FragmentTransaction tr = getChildFragmentManager().beginTransaction();
