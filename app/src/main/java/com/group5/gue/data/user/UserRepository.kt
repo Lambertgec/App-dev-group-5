@@ -76,7 +76,45 @@ class UserRepository private constructor() : BaseRepository {
         }
     }
 
+
+    /**
+     * Updates an existing User in the database
+     * 
+     * @param user new user data
+     * @param userId the ID of the user to update, if empty it will use the ID from the user object
+     * 
+     * @return Result with the updated User or an error if update fails
+     */
+    private suspend fun updateUser(user: User, userId: String = ""): Result<User> {
+        return try {
+            val userToUpdate = userId.ifEmpty { user.id }
+            val updatedUser = update<User>("id", userToUpdate, user)
+            if (updatedUser != null) {
+                cachedUser = updatedUser
+                Result.Success(updatedUser)
+            } else {
+                Result.Error(Exception("Failed to update user"))
+            }
+        } catch (e: Exception) {
+            Result.Error(Exception("Failed to update user", e))
+        }
+    }
+
+    // Convenience function for Java
+    fun updateUser(user: User, callback: UserUpdateCallback) {
+        scope.launch {
+            val result = updateUser(user)
+            withContext(Dispatchers.Main) {
+                callback.onResult(result)
+            }
+        }
+    }
+
     fun getCachedUser(): User? = cachedUser
 
-    fun setCachedUser(user: User?) { cachedUser = user }    
+    fun setCachedUser(user: User?) { cachedUser = user }  
+}
+
+fun interface UserUpdateCallback {
+    fun onResult(result: Result<User>)
 }
