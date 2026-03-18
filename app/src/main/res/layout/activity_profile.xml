@@ -123,4 +123,12 @@
         android:text="Change Username"
         android:layout_marginTop="8dp" />
 
+    <!-- Delete Account Button -->    
+    <Button
+        android:id="@+id/deleteAccountButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Delete Account"
+        android:layout_marginTop="8dp" />
+
 </LinearLayout>
