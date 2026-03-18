@@ -84,19 +84,16 @@ public class HomeFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         
         Button collectiblesButton = view.findViewById(R.id.collectiblesButton);
-        //collectiblesButton.setVisibility(View.VISIBLE);
-        FragmentTransaction tr = getChildFragmentManager().beginTransaction();
-        //tr.replace(R.id.full_view, new CollectFragment()).commit();
-        Fragment collectFragment = new CollectFragment();
-        tr.add(R.id.full_view, collectFragment).hide(collectFragment).commit();
 
         collectiblesButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                FragmentTransaction transaction = getChildFragmentManager().beginTransaction();
-                //transaction.replace(R.id.full_view, new CollectFragment()).commit();
-                //transaction.add(R.id.full_view, new CollectFragment()).commit();
-                transaction.show(collectFragment).commit();
+                int containerId = ((View) requireView().getParent()).getId();
+                getParentFragmentManager()
+                    .beginTransaction()
+                    .replace(containerId, new CollectiblesGalleryFragment())
+                    .addToBackStack(null)
+                    .commit();
 
             }
         });

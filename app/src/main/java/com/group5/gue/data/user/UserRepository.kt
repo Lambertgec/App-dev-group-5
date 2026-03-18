@@ -1,26 +1,30 @@
 package com.group5.gue.data.user
 
 import com.group5.gue.api.BaseRepository
+import com.group5.gue.api.fetchTableList
 import com.group5.gue.api.fetchSingle
 import com.group5.gue.api.update
 import com.group5.gue.api.insert
 import com.group5.gue.data.Result
 import com.group5.gue.data.model.User
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import com.group5.gue.api.HttpHandler
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 class UserRepository private constructor() : BaseRepository {
 
     override val tableName = "profile"
+    private val ownershipTableName = "has_collectible"
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var cachedUser: User? = null
-
     companion object {
         @Volatile
         private var instance: UserRepository? = null
@@ -124,7 +128,35 @@ class UserRepository private constructor() : BaseRepository {
 
     fun getCachedUser(): User? = cachedUser
 
-    fun setCachedUser(user: User?) { cachedUser = user }  
+    fun setCachedUser(user: User?) { cachedUser = user }
+
+    @Serializable
+    private data class CollectibleId(
+        @SerialName("collectible_id") val collectibleId: Int
+    )
+
+    suspend fun getOwnedCollectibleIds(userId: String): Set<Int> {
+        if (userId.isBlank()) {
+            return emptySet()
+        }
+
+        return fetchTableList<CollectibleId>(
+            targetTable = ownershipTableName,
+            columns = Columns.raw("collectible_id"),
+            column = "user_id",
+            value = userId
+        )
+            .map { it.collectibleId }
+            .toSet()
+    }
+
+    fun getOwnedCollectibleIds(userId: String, callback: (Set<Int>) -> Unit) {
+        scope.launch {
+            val ownedIds = getOwnedCollectibleIds(userId)
+            withContext(Dispatchers.Main) { callback(ownedIds) }
+        }
+    }
+
 }
 
 fun interface UserUpdateCallback {

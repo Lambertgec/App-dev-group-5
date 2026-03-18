@@ -4,6 +4,7 @@ import android.util.Log
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Columns
 
 interface BaseRepository {
     val tableName: String
@@ -98,5 +99,24 @@ suspend inline fun <reified T : Any> BaseRepository.delete(
     } catch (e: Exception) {
         Log.e(tag, "Error deleting from $tableName where $column = $value", e)
         false
+    }
+}
+
+suspend inline fun <reified T : Any> BaseRepository.fetchTableList(
+    targetTable: String = tableName,
+    columns: Columns = Columns.ALL,
+    column: String,
+    value: Any
+): List<T> {
+    return try {
+        client.postgrest
+            .from(targetTable)
+            .select(columns) {
+                filter { eq(column, value) }
+            }
+            .decodeList<T>()
+    } catch (e: Exception) {
+        Log.e(tag, "Error fetching list from $targetTable where $column = $value", e)
+        emptyList()
     }
 }
