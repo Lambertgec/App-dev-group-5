@@ -1,5 +1,6 @@
 package com.group5.gue;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.TextView;
 import android.widget.Button;
@@ -14,6 +15,7 @@ import androidx.preference.PreferenceFragmentCompat;
 import com.group5.gue.data.user.UserRepository;
 import com.group5.gue.data.model.User;
 import com.group5.gue.data.Result;
+import com.group5.gue.ui.login.launcher.LauncherActivity;
 
 public class ProfileActivity extends AppCompatActivity {
 
@@ -112,21 +114,24 @@ public class ProfileActivity extends AppCompatActivity {
             if (currentUser != null) {
                 
                 userRepository.deleteAccount(result -> {
-                    if (result instanceof Result.Success) {
-                        Toast.makeText(
-                            ProfileActivity.this,
-                            "Account deleted successfully",
-                            Toast.LENGTH_SHORT
-                        ).show();
-                        finish(); // Close the activity after deletion
-                    } else if (result instanceof Result.Error) {
-                        Exception error = ((Result.Error<Void>) result).getError();
-                        Toast.makeText(
-                            ProfileActivity.this,
-                            "Failed to delete account: " + error.getMessage(),
-                            Toast.LENGTH_SHORT
-                        ).show();
-                    }
+                    runOnUiThread(() -> {
+                        if (result instanceof Result.Success) {
+                            Toast.makeText(
+                                ProfileActivity.this,
+                                "Account deleted successfully",
+                                Toast.LENGTH_SHORT
+                            ).show();
+                            startActivity(new Intent(ProfileActivity.this, LauncherActivity.class));
+                            finishAffinity();
+                        } else if (result instanceof Result.Error) {
+                            Exception error = ((Result.Error<Void>) result).getError();
+                            Toast.makeText(
+                                ProfileActivity.this,
+                                "Failed to delete account: " + error.getMessage(),
+                                Toast.LENGTH_SHORT
+                            ).show();
+                        }
+                    });
                     return kotlin.Unit.INSTANCE;
                 });
             }
@@ -147,22 +152,24 @@ public class ProfileActivity extends AppCompatActivity {
         );
         
         userRepository.updateUser(updatedUser, result -> {
-            if (result instanceof Result.Success) {
-                currentUser = ((Result.Success<User>) result).getData();
-                displayUserProfile(currentUser);
-                Toast.makeText(
-                    ProfileActivity.this,
-                    "Username updated successfully",
-                    Toast.LENGTH_SHORT
-                ).show();
-            } else if (result instanceof Result.Error) {
-                Exception error = ((Result.Error<User>) result).getError();
-                Toast.makeText(
-                    ProfileActivity.this,
-                    "Failed to update username: " + error.getMessage(),
-                    Toast.LENGTH_SHORT
-                ).show();
-            }
+            runOnUiThread(() -> {
+                if (result instanceof Result.Success) {
+                    currentUser = ((Result.Success<User>) result).getData();
+                    displayUserProfile(currentUser);
+                    Toast.makeText(
+                        ProfileActivity.this,
+                        "Username updated successfully",
+                        Toast.LENGTH_SHORT
+                    ).show();
+                } else if (result instanceof Result.Error) {
+                    Exception error = ((Result.Error<User>) result).getError();
+                    Toast.makeText(
+                        ProfileActivity.this,
+                        "Failed to update username: " + error.getMessage(),
+                        Toast.LENGTH_SHORT
+                    ).show();
+                }
+            });
         });
     }
 

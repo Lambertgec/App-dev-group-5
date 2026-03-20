@@ -295,66 +295,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         loadMarkers();
     }
 
-    private void setupAdminListeners() {
-        mMap.setOnMapClickListener(latLng -> {
-            if (isAddingMarker) {
-                // Dismiss the instruction when location is chosen
-                if (instructionSnackbar != null) {
-                    instructionSnackbar.dismiss();
-                }
-                showAddMarkerDialog(latLng);
-                isAddingMarker = false;
-            }
-        });
-
-        // Delete logic: Click a marker's info window to delete it (Admin only)
-        mMap.setOnInfoWindowClickListener(marker -> {
-            if (user != null && user.getRole() == Role.ADMIN) {
-                new AlertDialog.Builder(getContext())
-                        .setTitle("Delete Location")
-                        .setMessage("Are you sure you want to delete " + marker.getTitle() + "?")
-                        .setPositiveButton("Delete", (dialog, which) -> {
-                            // TODO: Call Supabase delete logic here
-                            marker.remove();
-                            Toast.makeText(getContext(), "Marker removed", Toast.LENGTH_SHORT).show();
-                        })
-                        .setNegativeButton("Cancel", null)
-                        .show();
-            }
-        });
-    }
-
-    private void showAddMarkerDialog(LatLng latLng) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-        builder.setTitle("Add New Location");
-
-        View viewInflated = LayoutInflater.from(getContext()).inflate(R.layout.dialog_add_marker, (ViewGroup) getView(), false);
-        final EditText inputName = viewInflated.findViewById(R.id.input_building_name);
-        final EditText inputSnippet = viewInflated.findViewById(R.id.input_building_snippet);
-
-        builder.setView(viewInflated);
-
-        builder.setPositiveButton("Save", (dialog, which) -> {
-            String name = inputName.getText().toString();
-            String snippet = inputSnippet.getText().toString();
-            
-            if (!name.isEmpty()) {
-                mMap.addMarker(new MarkerOptions()
-                        .position(latLng)
-                        .title(name)
-                        .snippet(snippet)
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
-                
-                // TODO: Save to Supabase
-                Log.d("MAP_ADMIN", "Saving " + name + " at " + latLng.toString());
-                Toast.makeText(getContext(), name + " added successfully", Toast.LENGTH_SHORT).show();
-            }
-        });
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
-
-        builder.show();
-    }
-
     private void loadMarkers() {
         // These are your default markers
         // TODO: get the exact coordinates from database + additional info
