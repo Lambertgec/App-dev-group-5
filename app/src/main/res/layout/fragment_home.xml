@@ -36,17 +36,11 @@
             android:textColor="@color/black"
             android:textSize="14sp" />
 
-        <Button
-            android:id="@+id/logout_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
-            android:text="Logout (Test)" />
-
         <FrameLayout
             android:id="@+id/frameLayout"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp">
 
             <Button
                 android:id="@+id/showCalendarButton"
@@ -59,7 +53,8 @@
         <FrameLayout
             android:id="@+id/frameLayout_2"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
 
             <Button
                 android:id="@+id/collectiblesButton"
@@ -68,9 +63,6 @@
                 android:text="Collectibles" />
 
         </FrameLayout>
-
-
-
 
     </LinearLayout>
 </FrameLayout>

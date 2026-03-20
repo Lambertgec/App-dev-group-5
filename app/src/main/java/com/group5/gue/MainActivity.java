@@ -17,7 +17,9 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.group5.gue.data.auth.AuthManager;
 import com.group5.gue.databinding.ActivityMainBinding;
+import com.group5.gue.ui.login.LoginActivity;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -80,6 +82,21 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         });
+
+        MenuItem logout = menu.findItem(R.id.logout);
+        logout.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                AuthManager.Companion.getInstance(MainActivity.this).logout(result -> {
+                    // Navigate back to login
+                    startActivity(new Intent(MainActivity.this, LoginActivity.class)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+                    finish();
+                });
+                return true;
+            }
+        });
+
         return true;
     }
 

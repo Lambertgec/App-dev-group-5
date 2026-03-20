@@ -49,12 +49,12 @@ public class HomeFragment extends Fragment {
      */
     // TODO: Rename and change types and number of parameters
     public static HomeFragment newInstance(String param1, String param2) {
-        HomeFragment fragment = new HomeFragment();
+        Fragment fragment = new HomeFragment();
         Bundle args = new Bundle();
         args.putString(ARG_PARAM1, param1);
         args.putString(ARG_PARAM2, param2);
         fragment.setArguments(args);
-        return fragment;
+        return (HomeFragment) fragment;
     }
 
     @Override
@@ -81,15 +81,6 @@ public class HomeFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
-        Button logoutButton = view.findViewById(R.id.logout_button);
-        logoutButton.setOnClickListener(v -> {
-            AuthManager.Companion.getInstance(requireContext()).logout(result -> {
-                // Navigate back to login
-                startActivity(new Intent(requireContext(), LoginActivity.class)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
-            });
-        });
 
         Button collectiblesButton = view.findViewById(R.id.collectiblesButton);
         //collectiblesButton.setVisibility(View.VISIBLE);
