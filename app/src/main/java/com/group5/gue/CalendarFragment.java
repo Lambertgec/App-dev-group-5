@@ -1,5 +1,6 @@
 package com.group5.gue;
 
+import android.content.Context;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
@@ -124,9 +125,17 @@ public class CalendarFragment extends Fragment {
     }
 
     private void setCalendar() {
-
         Spinner spinner = getActivity().findViewById(R.id.calendarPicker);
-        calendarHandler.setCalendar(spinner.getSelectedItem().toString());
+        String selectedCalendar = spinner.getSelectedItem().toString();
+
+        CalendarHandler.selectedCalendar = selectedCalendar;
+        // Save to SharedPreferences so it persists across app launches
+        calendarHandler.setCalendar(selectedCalendar);
+
+        requireContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                .edit()
+                .putString("selected_calendar", selectedCalendar)
+                .apply();
 
         ArrayList<Event> events = calendarHandler.getAllEvents();
         Log.d("calendar", "onClick: ");
@@ -136,7 +145,6 @@ public class CalendarFragment extends Fragment {
 
         View datePicker = getActivity().findViewById(R.id.SectionDatePicker);
         datePicker.setVisibility(View.VISIBLE);
-
     }
 
     private void dayNext() {

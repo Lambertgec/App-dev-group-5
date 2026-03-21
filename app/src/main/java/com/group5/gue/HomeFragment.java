@@ -15,8 +15,9 @@ import android.widget.Button;
 import android.content.Intent;
 
 import com.group5.gue.data.PermissionHandler;
-import com.group5.gue.data.auth.AuthRepository;
-import com.group5.gue.ui.login.LoginActivity;
+import com.group5.gue.data.auth.AuthManager;
+import com.group5.gue.ui.login.launcher.LauncherActivity;
+import kotlin.Unit;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -81,15 +82,6 @@ public class HomeFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        Button logoutButton = view.findViewById(R.id.logout_button);
-        logoutButton.setOnClickListener(v -> {
-            AuthRepository.getInstance(requireContext()).logout(result -> {
-                // Navigate back to login
-                startActivity(new Intent(requireContext(), LoginActivity.class)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
-            });
-        });
-
         Button collectiblesButton = view.findViewById(R.id.collectiblesButton);
         //collectiblesButton.setVisibility(View.VISIBLE);
         FragmentTransaction tr = getChildFragmentManager().beginTransaction();
@@ -103,10 +95,12 @@ public class HomeFragment extends Fragment {
         collectiblesButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                FragmentTransaction transaction = getChildFragmentManager().beginTransaction();
-                //transaction.replace(R.id.full_view, new CollectFragment()).commit();
-                //transaction.add(R.id.full_view, new CollectFragment()).commit();
-                transaction.show(collectFragment).commit();
+                int containerId = ((View) requireView().getParent()).getId();
+                getParentFragmentManager()
+                    .beginTransaction()
+                    .replace(containerId, new CollectiblesGalleryFragment())
+                    .addToBackStack(null)
+                    .commit();
 
             }
         });

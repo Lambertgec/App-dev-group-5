@@ -21,3 +21,4 @@ local.properties
 /.idea/runConfigurations.xml
 /.idea/studiobot.xml
 /.idea/vcs.xml
+sonar-project.properties

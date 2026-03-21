@@ -1,13 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <fragment
+    <!-- Google Map -->
+    <androidx.fragment.app.FragmentContainerView
         android:id="@+id/map"
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+
+    <AutoCompleteTextView
+        android:id="@+id/building_search"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="7dp"
+        android:layout_gravity="top"
+        android:hint="@string/search_building"
+        android:padding="8dp"
+        android:background="@drawable/rounded_search_bar"
+        android:inputType="text"
+        android:imeOptions="actionSearch"
+        android:completionThreshold="1"
+        android:drawableStart="@android:drawable/ic_menu_search" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -16,12 +33,14 @@
         android:orientation="vertical"
         android:gravity="center_horizontal">
 
-        <Button
+    
+    <!-- Button to center TU/e -->
+    <Button
             android:id="@+id/btn_center_tue"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="16dp"
-            android:text="Center TU/e" />
+            android:text="@string/center_tu_e" />
 
         <TextView
             android:id="@+id/event_bar"
@@ -29,10 +48,55 @@
             android:layout_height="wrap_content"
             android:background="#CC000000"
             android:padding="12dp"
-            android:text="Checking calendar..."
+            android:text="@string/checking_calendar"
             android:textColor="@android:color/white"
             android:textSize="16sp" />
 
     </LinearLayout>
 
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/add_annotation"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone"
+        app:srcCompat="@android:drawable/ic_input_add" />
+
+    <!-- Floor level selector -->
+    <LinearLayout
+        android:id="@+id/floor_selector"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="60dp"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:elevation="8dp">
+
+    <Button
+        android:id="@+id/btn_floor_down"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/down"/>
+
+        <TextView
+        android:id="@+id/tv_floor_level"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/level_1"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"/>
+
+    <Button
+        android:id="@+id/btn_floor_up"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/up"/>
+</LinearLayout>
 </FrameLayout>

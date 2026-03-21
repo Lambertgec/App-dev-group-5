@@ -23,4 +23,99 @@
     <string name="setTime">Start time</string>
 
 
+    <string name="calendar_permission_message">
+        Give permission to your calendar to display a building for a lecture starting soon
+    </string>
+    <string name="event_happening">The event is happening at</string>
+    <string name="event_starting_soon">
+        There is an event starting soon at
+    </string>
+    <string name="no_event_soon"> There is no event in an hour </string>
+    <string name="collectibles_gallery_title">Collectibles</string>
+    <string name="collectibles_gallery_subtitle">Tap any image in the grid to see its name and description.</string>
+    <string name="collectibles_user_score">Your score: --</string>
+    <string name="collectibles_user_score_value">Your score: %1$d</string>
+    <string name="collectibles_upload_action">Upload collectible</string>
+    <string name="collectibles_back_home">Back</string>
+    <string name="collectibles_loading">Loading collectibles…</string>
+    <string name="collectibles_empty">No collectibles have been uploaded yet.</string>
+    <string name="collectibles_load_failed">Unable to load collectibles right now.</string>
+    <string name="collectible_details_title">Selected collectible</string>
+    <string name="collectible_details_placeholder">Choose an item from the grid to inspect it.</string>
+    <string name="collectible_no_description">No description was provided for this collectible.</string>
+    <string name="collectible_cost">Cost: %1$d points</string>
+    <string name="upload_collectible_title">Upload a collectible</string>
+    <string name="upload_collectible_subtitle">Pick an image, give it a name, and publish it to the shared gallery.</string>
+    <string name="upload_pick_image">Choose image</string>
+    <string name="upload_image_selected">Image selected</string>
+    <string name="upload_name_hint">Collectible name</string>
+    <string name="upload_score_hint">Score cost</string>
+    <string name="upload_description_hint">Description</string>
+    <string name="upload_publish">Publish collectible</string>
+    <string name="upload_name_required">Enter a collectible name.</string>
+    <string name="upload_score_required">Enter a score cost for this collectible.</string>
+    <string name="upload_score_invalid">Score must be a non-negative number.</string>
+    <string name="upload_image_required">Choose an image before publishing.</string>
+    <string name="upload_creator_missing">Unable to identify the current user.</string>
+    <string name="upload_read_failed">Unable to read the selected image.</string>
+    <string name="upload_success">Collectible uploaded.</string>
+    <string name="upload_in_progress">Uploading collectible…</string>
+    <string name="upload_preview_description">Selected collectible preview</string>
+    <string name="collectible_image_description">Collectible image</string>
+
+    <!-- Preferences -->
+    <string name="blocking">Block distractions</string>
+    <string name="preferences">Settings</string>
+    <string name="blocking_extra">Social media and other disctacting apps will be blocked</string>
+    <string name="title_activity_settings">Settings</string>
+    <!-- Strings used for fragments for navigation -->
+    <string name="first_fragment_label">First Fragment</string>
+    <string name="second_fragment_label">Second Fragment</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+
+    <string name="lorem_ipsum">
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam in scelerisque sem. Mauris
+        volutpat, dolor id interdum ullamcorper, risus dolor egestas lectus, sit amet mattis purus
+        dui nec risus. Maecenas non sodales nisi, vel dictum dolor. Class aptent taciti sociosqu ad
+        litora torquent per conubia nostra, per inceptos himenaeos. Suspendisse blandit eleifend
+        diam, vel rutrum tellus vulputate quis. Aliquam eget libero aliquet, imperdiet nisl a,
+        ornare ex. Sed rhoncus est ut libero porta lobortis. Fusce in dictum tellus.\n\n
+        Suspendisse interdum ornare ante. Aliquam nec cursus lorem. Morbi id magna felis. Vivamus
+        egestas, est a condimentum egestas, turpis nisl iaculis ipsum, in dictum tellus dolor sed
+        neque. Morbi tellus erat, dapibus ut sem a, iaculis tincidunt dui. Interdum et malesuada
+        fames ac ante ipsum primis in faucibus. Curabitur et eros porttitor, ultricies urna vitae,
+        molestie nibh. Phasellus at commodo eros, non aliquet metus. Sed maximus nisl nec dolor
+        bibendum, vel congue leo egestas.\n\n
+        Sed interdum tortor nibh, in sagittis risus mollis quis. Curabitur mi odio, condimentum sit
+        amet auctor at, mollis non turpis. Nullam pretium libero vestibulum, finibus orci vel,
+        molestie quam. Fusce blandit tincidunt nulla, quis sollicitudin libero facilisis et. Integer
+        interdum nunc ligula, et fermentum metus hendrerit id. Vestibulum lectus felis, dictum at
+        lacinia sit amet, tristique id quam. Cras eu consequat dui. Suspendisse sodales nunc ligula,
+        in lobortis sem porta sed. Integer id ultrices magna, in luctus elit. Sed a pellentesque
+        est.\n\n
+        Aenean nunc velit, lacinia sed dolor sed, ultrices viverra nulla. Etiam a venenatis nibh.
+        Morbi laoreet, tortor sed facilisis varius, nibh orci rhoncus nulla, id elementum leo dui
+        non lorem. Nam mollis ipsum quis auctor varius. Quisque elementum eu libero sed commodo. In
+        eros nisl, imperdiet vel imperdiet et, scelerisque a mauris. Pellentesque varius ex nunc,
+        quis imperdiet eros placerat ac. Duis finibus orci et est auctor tincidunt. Sed non viverra
+        ipsum. Nunc quis augue egestas, cursus lorem at, molestie sem. Morbi a consectetur ipsum, a
+        placerat diam. Etiam vulputate dignissim convallis. Integer faucibus mauris sit amet finibus
+        convallis.\n\n
+        Phasellus in aliquet mi. Pellentesque habitant morbi tristique senectus et netus et
+        malesuada fames ac turpis egestas. In volutpat arcu ut felis sagittis, in finibus massa
+        gravida. Pellentesque id tellus orci. Integer dictum, lorem sed efficitur ullamcorper,
+        libero justo consectetur ipsum, in mollis nisl ex sed nisl. Donec maximus ullamcorper
+        sodales. Praesent bibendum rhoncus tellus nec feugiat. In a ornare nulla. Donec rhoncus
+        libero vel nunc consequat, quis tincidunt nisl eleifend. Cras bibendum enim a justo luctus
+        vestibulum. Fusce dictum libero quis erat maximus, vitae volutpat diam dignissim.
+    </string>
+    <string name="search_building">Search building...</string>
+    <string name="center_tu_e">Center TU/e</string>
+    <string name="checking_calendar">Checking calendar...</string>
+    <string name="down">⬇</string>
+    <string name="level_1">Level 1</string>
+    <string name="up">⬆</string>
+
+
 </resources>

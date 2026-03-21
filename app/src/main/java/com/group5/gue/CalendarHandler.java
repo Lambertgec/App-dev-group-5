@@ -25,6 +25,10 @@ public class CalendarHandler {
         this.contentResolver = activity.getContentResolver();
     }
 
+    public CalendarHandler(ContentResolver contentResolver) {
+        this.contentResolver = contentResolver;
+    }
+
     public ArrayList<String> getCalendars(){
         Uri uri = CalendarContract.Calendars.CONTENT_URI;
 
@@ -55,7 +59,7 @@ public class CalendarHandler {
 
     public ArrayList<Event> getAllEvents() {
         String selection =
-                CalendarContract.Calendars.CALENDAR_DISPLAY_NAME + " = ?";
+                CalendarContract.Events.CALENDAR_DISPLAY_NAME + " = ?";
 
         String[] selectionArgs = new String[] {
                 this.calendarName};
@@ -66,7 +70,7 @@ public class CalendarHandler {
 
     public ArrayList<Event> getOngoingEvent() {
         String selection =
-                CalendarContract.Calendars.CALENDAR_DISPLAY_NAME + " = ? AND " +
+                CalendarContract.Events.CALENDAR_DISPLAY_NAME + " = ? AND " +
                 CalendarContract.Events.DTSTART + " <= ? AND " +
                 CalendarContract.Events.DTEND + " >= ?";
 
@@ -78,10 +82,26 @@ public class CalendarHandler {
         return submitQuery(selection, selectionArgs);
     }
 
+    public ArrayList<Event> getStartingSoon() {
+        String selection =
+                CalendarContract.Events.CALENDAR_DISPLAY_NAME + " = ? AND " +
+                        CalendarContract.Events.DTSTART + " >= ? AND " +
+                        CalendarContract.Events.DTSTART + " <= ?";
+
+        Long timeNow = System.currentTimeMillis();
+
+        String[] selectionArgs = new String[]{
+                this.calendarName,
+                String.valueOf(timeNow),
+                String.valueOf(timeNow + 3600000)};
+
+        return submitQuery(selection, selectionArgs);
+    }
+
 
     public ArrayList<Event> getDay(Long startOfDay) {
         String selection =
-                CalendarContract.Calendars.CALENDAR_DISPLAY_NAME + " = ? AND " +
+                CalendarContract.Events.CALENDAR_DISPLAY_NAME + " = ? AND " +
                         CalendarContract.Events.DTSTART + " <= ? AND " +
                         CalendarContract.Events.DTEND + " >= ?";
 
