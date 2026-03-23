@@ -88,6 +88,35 @@ class FriendsRepository private constructor() : BaseRepository {
         }
     }
 
+    fun fetchUsersWithScores(callback: (List<Profile>) -> Unit) {
+        scope.launch {
+            val currentUserId = client.auth.currentSessionOrNull()?.user?.id
+
+            if (currentUserId == null) {
+                withContext(Dispatchers.Main) { callback(emptyList()) }
+                return@launch
+            }
+
+            val topUsers = try {
+                val response = client.from(tableName).select(
+                    Columns.raw("user_id, profile!user_id(display_name, score)")
+                )
+
+                val entries = response.decodeList<FollowEntry>()
+                entries.mapNotNull { it.profile }
+                    .sortedByDescending { it.score }
+                    .take(5)
+
+            } catch (e: Exception) {
+                Log.e("FriendsRepository", "fetchUsersWithScores error", e)
+                emptyList()
+            }
+            withContext(Dispatchers.Main) {
+                callback(topUsers)
+            }
+        }
+    }
+
     /**
      * Fetch the list of friends along with their scores for the leaderboard.
      */

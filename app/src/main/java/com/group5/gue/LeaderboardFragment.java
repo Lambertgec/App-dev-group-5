@@ -43,8 +43,18 @@ public class LeaderboardFragment extends Fragment {
 
         // Fetch friends with scores for the leaderboard
         friendRepository.fetchFriendsWithScores(profiles -> {
-            if (binding != null) {
+            if (binding == null) {
+                return Unit.INSTANCE;
+            }
+            if (!profiles.isEmpty()) {
                 updateLeaderboardUI(profiles);
+            } else {
+                friendRepository.fetchUsersWithScores(globalProfiles -> {
+                    if (binding != null) {
+                        updateLeaderboardUI(globalProfiles);
+                    }
+                    return Unit.INSTANCE;
+                });
             }
             return Unit.INSTANCE;
         });
