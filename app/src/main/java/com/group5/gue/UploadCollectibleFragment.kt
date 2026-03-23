@@ -17,6 +17,7 @@ import com.google.android.material.textfield.TextInputEditText
 import com.group5.gue.data.Result
 import com.group5.gue.data.collectible.CollectibleRepository
 import com.group5.gue.data.model.Collectible
+import com.group5.gue.data.user.UserRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -31,6 +32,7 @@ class UploadCollectibleFragment : Fragment(R.layout.fragment_upload_collectible)
     }
 
     private val repository = CollectibleRepository.getInstance()
+    private val userRepository = UserRepository.getInstance()
 
     private var selectedImageBytes: ByteArray? = null
     private var selectedImageExtension: String? = null
@@ -75,6 +77,12 @@ class UploadCollectibleFragment : Fragment(R.layout.fragment_upload_collectible)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        if (userRepository.getCachedUser()?.isAdmin != true) {
+            Toast.makeText(requireContext(), "Only admins can upload collectibles", Toast.LENGTH_SHORT).show()
+            parentFragmentManager.popBackStack()
+            return
+        }
+
         previewImageView = view.findViewById(R.id.uploadPreviewImage)
         imageStatusView = view.findViewById(R.id.uploadImageStatus)
         nameInput = view.findViewById(R.id.collectibleNameInput)
@@ -101,6 +109,11 @@ class UploadCollectibleFragment : Fragment(R.layout.fragment_upload_collectible)
     }
 
     private fun submitCollectible() {
+        if (userRepository.getCachedUser()?.isAdmin != true) {
+            Toast.makeText(requireContext(), "Only admins can upload collectibles", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         val name = nameInput.text?.toString()?.trim().orEmpty()
         val scoreRaw = scoreInput.text?.toString()?.trim().orEmpty()
         val description = descriptionInput.text?.toString()?.trim()?.takeIf { it.isNotBlank() }
