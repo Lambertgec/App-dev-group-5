@@ -61,9 +61,6 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-
         String savedCalendar = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
                 .getString("selected_calendar", null);
 
@@ -106,16 +103,6 @@ public class MainActivity extends AppCompatActivity {
         MenuInflater menuInflater = new MenuInflater(this);
         menuInflater.inflate(R.menu.top_menu, menu);
 
-        MenuItem setting = menu.findItem(R.id.setting);
-        setting.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
-                Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
-                startActivity(intent);
-                return true;
-            }
-        });
-
         if (blockingManager.isBlockingEnabled()) {
             Toast.makeText(this, "App blocking is enabled", Toast.LENGTH_SHORT).show();
             PermissionHandler permissionHandler = new PermissionHandler(this);
@@ -140,13 +127,6 @@ public class MainActivity extends AppCompatActivity {
         } else {
             Toast.makeText(this, "App blocking is disabled", Toast.LENGTH_SHORT).show();
         }
-        return true;
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater menuInflater = new MenuInflater(this);
-        menuInflater.inflate(R.menu.top_menu, menu);
 
         MenuItem profile = menu.findItem(R.id.profile);
         profile.setOnMenuItemClickListener(item -> {

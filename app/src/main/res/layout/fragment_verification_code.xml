@@ -6,9 +6,11 @@
     tools:context=".VerificationCodeFragment">
 
     <LinearLayout
+        android:id="@+id/adminLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:visibility="gone">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -19,14 +21,14 @@
                 android:id="@+id/setLocation"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/setLocation"
+                android:text="Set Location"
                 android:textAppearance="@style/TextAppearance.AppCompat.Display1" />
 
             <TextView
                 android:id="@+id/setTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/setTime"
+                android:text="Set Time"
                 android:textAppearance="@style/TextAppearance.AppCompat.Display1" />
 
         </LinearLayout>
@@ -39,6 +41,31 @@
             android:text="012345"
             android:textAppearance="@style/TextAppearance.AppCompat.Large"
             android:textSize="48sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/userLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <EditText
+            android:id="@+id/codeInput"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:hint="Enter Code"
+            android:inputType="number"
+            android:maxLength="6"
+            android:textAlignment="center"
+            android:textSize="24sp" />
+
+        <Button
+            android:id="@+id/verifyButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Verify Code" />
     </LinearLayout>
 
 </FrameLayout>

@@ -8,6 +8,7 @@ import android.app.usage.UsageEvents;
 import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -23,6 +24,10 @@ public class AppBlockingService extends Service {
     private static final String CHANNEL_ID = "AppBlockingChannel";
     private static final int NOTIFICATION_ID = 12345;
     private static final long CHECK_INTERVAL = 500;
+
+    private static final String PREFS_LECTURE = "lecture_prefs";
+    private static final String KEY_LECTURE_END_TIME = "lecture_end_time";
+    private static final String KEY_ATTENDANCE_VERIFIED = "attendance_verified";
 
     private Handler handler;
     private Runnable checkAppRunnable;
@@ -84,15 +89,34 @@ public class AppBlockingService extends Service {
     }
 
     private void checkForegroundApp() {
+        if (!shouldBlock()) {
+            return;
+        }
+
         String foregroundApp = getForegroundApp();
-        
         if (foregroundApp != null && !foregroundApp.equals(ownPackageName)) {
-            
             if (blockingManager.isAppBlocked(foregroundApp)) {
                 Log.i(TAG, "BLOCKING: " + foregroundApp);
                 launchBlockingActivity();
             }
         }
+    }
+
+    private boolean shouldBlock() {
+        SharedPreferences lecturePrefs = getSharedPreferences(PREFS_LECTURE, Context.MODE_PRIVATE);
+        boolean isAttendanceVerified = lecturePrefs.getBoolean(KEY_ATTENDANCE_VERIFIED, false);
+        long lectureEndTime = lecturePrefs.getLong(KEY_LECTURE_END_TIME, 0);
+
+        if (isAttendanceVerified) {
+//            in lecture AND user has blocking on
+            if (System.currentTimeMillis() < lectureEndTime) {
+                return blockingManager.isBlockingEnabled();
+            } else {
+                lecturePrefs.edit().putBoolean(KEY_ATTENDANCE_VERIFIED, false).apply();
+            }
+        }
+
+        return false;
     }
 
     private String getForegroundApp() {

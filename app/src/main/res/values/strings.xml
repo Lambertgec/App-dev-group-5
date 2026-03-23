@@ -63,11 +63,6 @@
     <string name="upload_preview_description">Selected collectible preview</string>
     <string name="collectible_image_description">Collectible image</string>
 
-    <!-- Preferences -->
-    <string name="blocking">Block distractions</string>
-    <string name="preferences">Settings</string>
-    <string name="blocking_extra">Social media and other disctacting apps will be blocked</string>
-    <string name="title_activity_settings">Settings</string>
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">First Fragment</string>
     <string name="second_fragment_label">Second Fragment</string>
