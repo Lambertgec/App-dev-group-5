@@ -98,15 +98,15 @@ class FriendsRepository private constructor() : BaseRepository {
             }
 
             val topUsers = try {
-                val response = client.from(tableName).select(
-                    Columns.raw("user_id, profile!user_id(display_name, score)")
-                )
+                val response = client.from("profile").select {
+                    filter {
+                        neq("display_name", "")
+                    }
+                    order(column = "score", order = io.github.jan.supabase.postgrest.query.Order.DESCENDING)
+                    limit(10)
+                }
 
-                val entries = response.decodeList<FollowEntry>()
-                entries.mapNotNull { it.profile }
-                    .sortedByDescending { it.score }
-                    .take(5)
-
+                response.decodeList<Profile>()
             } catch (e: Exception) {
                 Log.e("FriendsRepository", "fetchUsersWithScores error", e)
                 emptyList()
