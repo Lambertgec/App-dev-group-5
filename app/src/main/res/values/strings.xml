@@ -48,6 +48,8 @@
     <string name="upload_in_progress">Uploading collectible…</string>
     <string name="upload_preview_description">Selected collectible preview</string>
     <string name="collectible_image_description">Collectible image</string>
+    <string name="collectible_details_delete">Delete</string>
+
 
     <!-- Preferences -->
     <string name="blocking">Block distractions</string>

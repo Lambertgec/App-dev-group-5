@@ -9,11 +9,11 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.group5.gue.data.Result;
 import com.group5.gue.data.collectible.CollectibleRepository;
 import com.group5.gue.data.model.Collectible;
 import com.group5.gue.data.model.User;
@@ -35,6 +35,7 @@ public class CollectiblesGalleryFragment extends Fragment {
     private final CollectibleRepository repository = CollectibleRepository.Companion.getInstance();
     private final UserRepository userRepository = UserRepository.Companion.getInstance();
 
+    private User currentUser;
     private CollectibleGridAdapter adapter;
     private ProgressBar progressBar;
     private TextView emptyView;
@@ -44,6 +45,7 @@ public class CollectiblesGalleryFragment extends Fragment {
     private TextView detailCostView;
     private TextView detailDescriptionView;
     private Set<Integer> ownedCollectibleIds = new HashSet<>();
+    
 
     public CollectiblesGalleryFragment() {
         super(R.layout.fragment_collectibles_gallery);
@@ -53,7 +55,9 @@ public class CollectiblesGalleryFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        currentUser = userRepository.getCachedUser();
         adapter = new CollectibleGridAdapter(this::showDetails);
+        
 
         progressBar = view.findViewById(R.id.collectiblesProgressBar);
         emptyView = view.findViewById(R.id.collectiblesEmptyView);
@@ -71,13 +75,17 @@ public class CollectiblesGalleryFragment extends Fragment {
         backButton.setOnClickListener(v -> getParentFragmentManager().popBackStack());
 
         Button uploadButton = view.findViewById(R.id.openUploadButton);
-        uploadButton.setOnClickListener(v -> {
-            int containerId = ((View) requireView().getParent()).getId();
-            getParentFragmentManager().beginTransaction()
-                .replace(containerId, new UploadCollectibleFragment())
-                .addToBackStack(null)
-                .commit();
-        });
+        boolean isAdmin = currentUser != null && currentUser.isAdmin();
+        uploadButton.setVisibility(isAdmin ? View.VISIBLE : View.GONE);
+        if (isAdmin) {
+            uploadButton.setOnClickListener(v -> {
+                int containerId = ((View) requireView().getParent()).getId();
+                getParentFragmentManager().beginTransaction()
+                    .replace(containerId, new UploadCollectibleFragment())
+                    .addToBackStack(null)
+                    .commit();
+            });
+        }
 
         // Upload returns via fragment result so the gallery can refresh without a direct fragment reference.
         getParentFragmentManager().setFragmentResultListener(
@@ -92,14 +100,12 @@ public class CollectiblesGalleryFragment extends Fragment {
     }
 
     private void refreshUserScore() {
-        User cachedUser = userRepository.getCachedUser();
-        int userScore = cachedUser != null ? cachedUser.getScore() : 0;
+        int userScore = currentUser != null ? currentUser.getScore() : 0;
         userScoreView.setText(getString(R.string.collectibles_user_score_value, userScore));
     }
 
     /**
      * Loads collectibles from the database to populate the grid
-     * 
      * Displays a toast if loading is triggered by a successful upload
      * 
      * @param showUploadToast whether to show a toast confirming a successful upload
@@ -111,8 +117,7 @@ public class CollectiblesGalleryFragment extends Fragment {
         detailCard.setVisibility(View.GONE);
 
         repository.getAllCollectibles(collectibles -> {
-            User cachedUser = userRepository.getCachedUser();
-            String userId = cachedUser != null ? cachedUser.getId() : null;
+            String userId = currentUser != null ? currentUser.getId() : null;
 
             if (userId == null || userId.trim().isEmpty()) {
                 applyCollectiblesState(collectibles, new HashSet<>(), showUploadToast);
@@ -156,6 +161,7 @@ public class CollectiblesGalleryFragment extends Fragment {
      */
     private void showDetails(Collectible collectible) {
         detailCard.setVisibility(View.VISIBLE);
+        setupDeleteButton(collectible);
         detailNameView.setText(collectible.getName());
         detailCostView.setText(getString(R.string.collectible_cost, collectible.getScore()));
 
@@ -165,6 +171,25 @@ public class CollectiblesGalleryFragment extends Fragment {
             detailDescriptionView.setText(R.string.collectible_no_description);
         } else {
             detailDescriptionView.setText(description);
+        }
+    }
+
+    private void setupDeleteButton(Collectible collectible) {
+        Button deletebutton = detailCard.findViewById(R.id.collectibleDetailDeleteButton);
+        if (currentUser != null && currentUser.isAdmin()) {
+            deletebutton.setVisibility(View.VISIBLE);
+            deletebutton.setOnClickListener(v -> repository.deleteCollectible(collectible.getId(), result -> {
+                if (result instanceof Result.Success) {
+                    Toast.makeText(requireContext(), "Collectible deleted", Toast.LENGTH_SHORT).show();
+                    loadCollectibles(false);
+                } else if (result instanceof Result.Error) {
+                    Exception error = ((Result.Error<Unit>) result).getError();
+                    Toast.makeText(requireContext(), "Failed to delete: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+                return Unit.INSTANCE;
+            }));
+        } else {
+            deletebutton.setVisibility(View.GONE);
         }
     }
 }

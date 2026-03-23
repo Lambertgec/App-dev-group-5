@@ -4,6 +4,7 @@ import android.util.Log
 import com.group5.gue.api.BaseRepository
 import com.group5.gue.api.fetchAll
 import com.group5.gue.api.insert
+import com.group5.gue.api.delete
 import com.group5.gue.data.Result
 import com.group5.gue.data.model.Collectible
 import kotlinx.coroutines.CoroutineScope
@@ -61,7 +62,6 @@ class CollectibleRepository private constructor() : BaseRepository {
      */
 
     suspend fun insertCollectible(collectible: Collectible, imageBytes: ByteArray, fileExtension: String): Result<Collectible> {
-        // This method is a convenience for callers that want to skip the two-step flow and let the service handle it end-to-end.
         return CollectibleService.getInstance().createCollectible(
             collectible = collectible,
             imageBytes = imageBytes,
@@ -70,18 +70,20 @@ class CollectibleRepository private constructor() : BaseRepository {
     }
 
     /**
-     * Conveniency method for java callers
+     * Deletes collectible by id
+     * Edge function handles deleting the image from storage
+     * 
+     * @param collectibleId ID of the collectible to delete
+     * @return Result indicating success
      */
 
-    fun insertCollectible(
-        collectible: Collectible,
-        imageBytes: ByteArray,
-        fileExtension: String,
-        callback: (Result<Collectible>) -> Unit,
-    ) {
-        scope.launch {
-            val result = insertCollectible(collectible, imageBytes, fileExtension)
-            withContext(Dispatchers.Main) { callback(result) }
+    suspend fun deleteCollectible(collectibleId: Int): Result<Unit> {
+        return try {
+            delete<Collectible>("id", collectibleId)
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to delete collectible", e)
+            Result.Error(Exception("Failed to delete collectible", e))
         }
     }
 
@@ -93,14 +95,18 @@ class CollectibleRepository private constructor() : BaseRepository {
         return fetchAll()
     }
 
-    /**
-     * Java-friendly wrapper around [getAllCollectibles].
-     *
-     * Always invokes [callback] on the main thread. Returns an empty list if fetch fails.
-     */
+    // Conveniency method for java callers
+
+
+    fun deleteCollectible(collectibleId: Int, callback: (Result<Unit>) -> Unit) {
+        scope.launch {
+            val result = deleteCollectible(collectibleId)
+            withContext(Dispatchers.Main) { callback(result) }
+        }
+    }
+
     fun getAllCollectibles(callback: (List<Collectible>) -> Unit) {
         scope.launch {
-            // Java UI callers use this callback wrapper instead of dealing with suspending functions directly.
             val collectibles = try {
                 getAllCollectibles()
             } catch (e: Exception) {
