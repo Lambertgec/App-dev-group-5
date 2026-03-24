@@ -8,6 +8,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.group5.gue.MainActivity;
 import com.group5.gue.R;
 import com.group5.gue.data.Result;
 import com.group5.gue.data.auth.AuthManager;
@@ -53,6 +54,7 @@ public class LoginActivity extends AppCompatActivity {
                 showError(result);
             }
         });
+
     }
 
     private void doSignUp() {

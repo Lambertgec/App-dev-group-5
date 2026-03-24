@@ -46,7 +46,7 @@ googleid = { module = "com.google.android.libraries.identity.googleid:googleid",
 postgrest-kt = {module = "io.github.jan-tennert.supabase:postgrest-kt"}
 auth-kt = { module = "io.github.jan-tennert.supabase:auth-kt" }
 supabase-bom = { module = "io.github.jan-tennert.supabase:bom", version.ref = "bom" }
-storage-kt = {module = "io.github.jan-tennert.supabase:storage-kt" } 
+storage-kt = {module = "io.github.jan-tennert.supabase:storage-kt" }
 
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor"}
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
@@ -69,9 +69,7 @@ androidx-navigation-fragment = { group = "androidx.navigation", name = "navigati
 androidx-navigation-ui = { group = "androidx.navigation", name = "navigation-ui", version.ref = "navigationUi" }
 glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "glide" }
 
-
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlinVersion" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinVersion" }
-

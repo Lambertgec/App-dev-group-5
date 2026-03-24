@@ -1,8 +1,15 @@
 package com.group5.gue;
 
+import android.content.Intent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.widget.Toast;
+
+import androidx.appcompat.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -26,6 +33,8 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.group5.gue.blocking.AppBlockingManager;
+import com.group5.gue.data.PermissionHandler;
 import com.group5.gue.data.attendance.AttendanceRepository;
 import com.group5.gue.data.auth.AuthManager;
 import com.group5.gue.data.model.AttendanceRecord;
@@ -40,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
             new PeriodicWorkRequest.Builder(AttendanceCheckWorker.class, 15, TimeUnit.MINUTES)
                     .build();
     ActivityMainBinding binding;
+    private AppBlockingManager blockingManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,12 +94,38 @@ public class MainActivity extends AppCompatActivity {
            }
            return true;
         });
+
+        blockingManager = new AppBlockingManager(this);
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater menuInflater = new MenuInflater(this);
         menuInflater.inflate(R.menu.top_menu, menu);
+
+        if (blockingManager.isBlockingEnabled()) {
+            PermissionHandler permissionHandler = new PermissionHandler(this);
+            permissionHandler.requestAppBlocking();
+
+            blockingManager.addBlockedApp("com.android.chrome");
+            blockingManager.addBlockedApp("com.google.android.youtube");
+            blockingManager.addBlockedApp("app.revanced.android.youtube");
+            blockingManager.addBlockedApp("com.instagram.android");
+            blockingManager.addBlockedApp("com.facebook.katana");
+            blockingManager.addBlockedApp("com.facebook.orca");
+            blockingManager.addBlockedApp("com.facebook.lite");
+            blockingManager.addBlockedApp("com.facebook.mlite");
+            blockingManager.addBlockedApp("com.discord");
+
+            try {
+                blockingManager.startBlockingService();
+            } catch (Exception e) {
+                Toast.makeText(this, "Error starting app blocking: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            }
+
+        } else {
+            Toast.makeText(this, "App blocking is disabled", Toast.LENGTH_SHORT).show();
+        }
 
         MenuItem profile = menu.findItem(R.id.profile);
         profile.setOnMenuItemClickListener(item -> {

@@ -89,6 +89,8 @@ dependencies {
     implementation(libs.androidx.navigation.ui)
     implementation(libs.androidx.work.runtime)
     implementation(libs.glide)
+    implementation(libs.androidx.recyclerview)
+    implementation(libs.androidx.preference)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
