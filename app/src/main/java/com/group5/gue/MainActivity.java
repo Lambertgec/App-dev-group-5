@@ -104,7 +104,6 @@ public class MainActivity extends AppCompatActivity {
         menuInflater.inflate(R.menu.top_menu, menu);
 
         if (blockingManager.isBlockingEnabled()) {
-            Toast.makeText(this, "App blocking is enabled", Toast.LENGTH_SHORT).show();
             PermissionHandler permissionHandler = new PermissionHandler(this);
             permissionHandler.requestAppBlocking();
 
