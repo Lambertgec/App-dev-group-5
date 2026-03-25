@@ -113,6 +113,9 @@
     <string name="down">⬇</string>
     <string name="level_1">Level 1</string>
     <string name="up">⬆</string>
+    <string name="building_name">Building name</string>
+    <string name="room_number_optional">Room number (optional)</string>
+    <string name="level_e_g_0_1_2">Level (e.g. 0, 1, 2)</string>
 
 
 </resources>

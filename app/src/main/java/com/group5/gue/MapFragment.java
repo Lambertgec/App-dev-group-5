@@ -167,7 +167,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         FloatingActionButton addAnnotationBtn = view.findViewById(R.id.add_annotation);
 
         // Check for ADMIN role
-        if (user != null && user.getRole() == Role.ADMIN) {
+        if (isAdmin()) {
             addAnnotationBtn.setVisibility(View.VISIBLE);
             addAnnotationBtn.setOnClickListener(v -> {
                 isAddingMarker = true;
@@ -245,6 +245,14 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             e.printStackTrace();
         }
 
+        // used so that the 'center at user's location' button is not covered
+        mMap.setPadding(
+                0,   // left
+                250, // top
+                0,   // right
+                0    // bottom
+        );
+
         if (ContextCompat.checkSelfPermission(requireContext(),
                 Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
@@ -278,7 +286,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 snippet.setText(marker.getSnippet());
 
                 // Show 'x' only for admins
-                if (user != null && user.getRole() == Role.ADMIN) {
+                if (isAdmin()) {
                     deleteIcon.setVisibility(View.VISIBLE);
                 } else {
                     deleteIcon.setVisibility(View.GONE);
@@ -290,36 +298,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         // Adding listeners for Admin actions
         setupAdminListeners();
-
-        // Adding markers to the Map
-        loadMarkers();
-    }
-
-    private void loadMarkers() {
-        // These are your default markers
-        // TODO: get the exact coordinates from database + additional info
-        // TODO: add more buildings
-        LatLng metaforum = new LatLng(51.447868, 5.487455);
-        LatLng atlas = new LatLng(51.44784, 5.48605);
-        LatLng auditorium = new LatLng(51.447910, 5.484945);
-
-        mMap.addMarker(new MarkerOptions()
-                .position(metaforum)
-                .title("MF (Metaforum)")
-                .icon(BitmapDescriptorFactory.defaultMarker(
-                        BitmapDescriptorFactory.HUE_BLUE))
-                .snippet("Contains the TU/e library and ESA desk"));
-        mMap.addMarker(new MarkerOptions()
-                .position(atlas)
-                .title("Atlas")
-                .icon(BitmapDescriptorFactory.defaultMarker(
-                        BitmapDescriptorFactory.HUE_BLUE)));
-        mMap.addMarker(new MarkerOptions()
-                .position(auditorium)
-                .title("Aud (Auditorium)")
-                .icon(BitmapDescriptorFactory.defaultMarker(
-                        BitmapDescriptorFactory.HUE_BLUE))
-                .snippet("Contains most lecture rooms"));
     }
 
     @Override
@@ -741,64 +719,68 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         View viewInflated = LayoutInflater.from(getContext()).inflate(R.layout.dialog_add_marker,
                 (ViewGroup) getView(), false);
         final EditText inputName = viewInflated.findViewById(R.id.input_building_name);
-        final EditText inputSnippet = viewInflated.findViewById(R.id.input_building_snippet);
+        final EditText inputRoom = viewInflated.findViewById(R.id.input_room_number);
+        final EditText inputLevel = viewInflated.findViewById(R.id.input_level);
+
+        // Show level field only when a room number is entered
+        inputRoom.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                inputLevel.setVisibility(s.length() > 0 ? View.VISIBLE : View.GONE);
+            }
+            @Override public void afterTextChanged(android.text.Editable s) {}
+        });
 
         builder.setView(viewInflated);
 
         builder.setPositiveButton("Save", (dialog, which) -> {
-            String name = inputName.getText().toString();
-            String snippet = inputSnippet.getText().toString();
+            String name = inputName.getText().toString().trim();
+            String room = inputRoom.getText().toString().trim();
+            String levelStr = inputLevel.getText().toString().trim();
 
             if (!name.isEmpty()) {
+                // Determine level: null if no room, currentFloor if level field empty, else parsed
+                String level;
+                if (room.isEmpty()) {
+                    level = null; // building-only marker, no level needed
+                } else if (levelStr.isEmpty()) {
+                    level = currentFloor == -2 ? null : String.valueOf(currentFloor);
+                } else {
+                    level = levelStr;
+                }
+
                 Annotation newAnnotation = new Annotation(
-                    0L,                                                     // id
-                    null,                                                      // createdAt
-                    name,                                                      // building
-                    snippet,                                                   // roomName
-                    currentFloor == -2 ? null : String.valueOf(currentFloor), // level
-                    latLng.latitude,                                           // latitude
-                    latLng.longitude,                                          // longitude
-                    user.getId()                                               // creatorId
+                        0L,
+                        null,
+                        name,
+                        room,    // roomName
+                        level,
+                        latLng.latitude,
+                        latLng.longitude,
+                        user.getId()
                 );
 
                 repository.create(newAnnotation, created -> {
                     if (created != null) {
-
                         Marker marker = mMap.addMarker(new MarkerOptions()
                                 .position(latLng)
                                 .title(created.getBuilding())
                                 .snippet(created.getRoomName())
                         );
+                        if (marker != null) marker.setTag(created.getId());
 
-                        if (marker != null) {
-                            marker.setTag(created.getId());
-                        }
-
-                        Toast.makeText(getContext(),
-                                "Saved to database",
-                                Toast.LENGTH_SHORT).show();
-
-                        fetchAnnotations(); // refresh
-
+                        Toast.makeText(getContext(), "Saved to database", Toast.LENGTH_SHORT).show();
+                        fetchAnnotations();
                     } else {
-
-                        Log.e("MAP_ADMIN", "Create failed. Annotation attempted: "
-                                + newAnnotation.getBuilding()
-                                + ", creatorId=" + newAnnotation.getCreatorId());
-
-                        Toast.makeText(getContext(),
-                                "Save failed",
-                                Toast.LENGTH_SHORT).show();
+                        Log.e("MAP_ADMIN", "Create failed: " + name);
+                        Toast.makeText(getContext(), "Save failed", Toast.LENGTH_SHORT).show();
                     }
                     return null;
                 });
-
-                Log.d("MAP_ADMIN", "Saving " + name + " at " + latLng.toString());
             }
         });
-        builder.setNegativeButton("Cancel",
-                (dialog, which) -> dialog.cancel());
 
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
         builder.show();
     }
 

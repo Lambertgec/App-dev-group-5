@@ -54,12 +54,14 @@
 
     </LinearLayout>
 
+    <!-- Admin add button -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/add_annotation"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="16dp"
+        android:layout_marginBottom="80dp"
+        android:layout_marginEnd="16dp"
         android:clickable="true"
         android:focusable="true"
         android:visibility="gone"
