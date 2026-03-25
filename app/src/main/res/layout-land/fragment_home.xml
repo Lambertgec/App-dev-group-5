@@ -16,7 +16,7 @@
 
         <TextView
             android:id="@+id/home_title"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="Welcome back"
             android:textColor="@color/black"
@@ -28,7 +28,7 @@
 
         <TextView
             android:id="@+id/home_subtitle"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:text="Your activity will show up here."
@@ -40,7 +40,7 @@
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/calendarRecyclerView"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="0dp"
             android:visibility="gone"
             app:layout_constraintStart_toStartOf="parent"
@@ -48,9 +48,9 @@
 
         <FrameLayout
             android:id="@+id/frameLayout"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="32dp"
             android:layout_marginEnd="8dp"
             app:layout_constraintEnd_toStartOf="@+id/frameLayout_2"
             app:layout_constraintStart_toStartOf="parent"
@@ -65,7 +65,7 @@
 
         <FrameLayout
             android:id="@+id/frameLayout_2"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             app:layout_constraintBottom_toBottomOf="@+id/frameLayout"

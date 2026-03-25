@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="12dp"
+    android:background="@android:color/white"
+    tools:context=".CollectiblesGalleryFragment">
+
+    <LinearLayout
+        android:id="@+id/headerButtons"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <Button
+            android:id="@+id/backHomeButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/collectibles_back_home"
+            android:visibility="gone"/>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <Button
+            android:id="@+id/openUploadButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/collectibles_upload_action" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/galleryTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/collectibles_gallery_title"
+        android:textColor="@color/black"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/headerButtons" />
+
+    <TextView
+        android:id="@+id/collectiblesUserScore"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/collectibles_user_score"
+        android:textColor="@color/black"
+        android:textSize="12sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/galleryTitle" />
+
+    <ProgressBar
+        android:id="@+id/collectiblesProgressBar"
+        style="?android:attr/progressBarStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        app:layout_constraintBottom_toBottomOf="@id/collectiblesUserScore"
+        app:layout_constraintStart_toEndOf="@id/collectiblesUserScore"
+        app:layout_constraintTop_toTopOf="@id/collectiblesUserScore" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/collectiblesRecyclerView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="8dp"
+        android:scrollbars="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/collectibleDetailsCard"
+        app:layout_constraintHorizontal_weight="1.2"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/collectiblesUserScore"
+        tools:listitem="@layout/item_collectible_grid" />
+
+    <FrameLayout
+        android:id="@+id/collectibleDetailsCard"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="8dp"
+        android:background="@android:color/white"
+        android:elevation="4dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_weight="0.8"
+        app:layout_constraintStart_toEndOf="@id/collectiblesRecyclerView"
+        app:layout_constraintTop_toBottomOf="@id/headerButtons">
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <TextView
+                    android:id="@+id/collectibleDetailName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/black"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    tools:text="Card Name" />
+
+                <TextView
+                    android:id="@+id/collectibleDetailCost"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/black"
+                    android:textSize="12sp"
+                    tools:text="Cost: 20 points" />
+
+                <TextView
+                    android:id="@+id/collectibleDetailDescription"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textColor="@color/black"
+                    android:textSize="13sp"
+                    tools:text="Description goes here..." />
+
+                <Button
+                    android:id="@+id/collectibleDetailDeleteButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:backgroundTint="#FF5252"
+                    android:text="@string/collectible_details_delete"
+                    android:textColor="@color/white" />
+            </LinearLayout>
+        </ScrollView>
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/collectiblesEmptyView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="No collectibles found"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/collectiblesRecyclerView"
+        app:layout_constraintEnd_toEndOf="@id/collectiblesRecyclerView"
+        app:layout_constraintStart_toStartOf="@id/collectiblesRecyclerView"
+        app:layout_constraintTop_toTopOf="@id/collectiblesRecyclerView" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
