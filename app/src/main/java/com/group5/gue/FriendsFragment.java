@@ -23,6 +23,8 @@ import java.util.List;
 public class FriendsFragment extends Fragment {
     private FragmentFriendsBinding binding;
 
+    private boolean isAdminUser = false;
+
     public FriendsFragment() {
     }
 
@@ -37,23 +39,51 @@ public class FriendsFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        FriendsRepository repository = FriendsRepository.getInstance();
+
         binding.friendsRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        FriendsRepository friendRepository = FriendsRepository.getInstance();
+        binding.emptyFriendsTextView.setVisibility(View.GONE);
+        binding.friendsRecyclerView.setVisibility(View.VISIBLE);
 
-        refreshFriends(friendRepository);
+        repository.isAdmin(isAdmin -> {
+            if (binding == null) return Unit.INSTANCE;
 
-        // Add friends by Keyboard Search button
+            this.isAdminUser = isAdmin;
+            if (isAdmin) {
+                binding.addFriendEditText.setHint(R.string.hint_admin_search);
+                binding.emptyFriendsTextView.setVisibility(View.GONE);
+                binding.friendsRecyclerView.setVisibility(View.GONE);
+            } else {
+                binding.addFriendEditText.setHint(R.string.hint_user_search);
+                binding.friendsRecyclerView.setVisibility(View.VISIBLE);
+                refreshFriends(repository);
+            }
+            return Unit.INSTANCE;
+        });
+
+        binding.addFriendButton.setOnClickListener(v -> performAddFriend(repository));
+
         binding.addFriendEditText.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                performAddFriend(friendRepository);
+            if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE) {
+                performAddFriend(repository);
                 return true;
             }
             return false;
         });
+    }
 
-        // Setup Click Listener for Add Button
-        binding.addFriendButton.setOnClickListener(v -> performAddFriend(friendRepository));
+    private void loadFriendsList() {
+        FriendsRepository.getInstance().fetchFriendsWithScores(profiles -> {
+            if (binding == null) return Unit.INSTANCE;
+
+            if (profiles.isEmpty()) {
+                binding.emptyFriendsTextView.setVisibility(View.VISIBLE);
+            } else {
+                binding.emptyFriendsTextView.setVisibility(View.GONE);
+            }
+            return Unit.INSTANCE;
+        });
     }
 
     private void performAddFriend(FriendsRepository repository) {
@@ -67,7 +97,9 @@ public class FriendsFragment extends Fragment {
                     if (binding != null) {
                         binding.addFriendEditText.setText("");
                     }
-                    refreshFriends(repository);
+                    if (!isAdminUser) {
+                        refreshFriends(repository);
+                    }
                 }
                 return Unit.INSTANCE;
             });
@@ -134,7 +166,11 @@ public class FriendsFragment extends Fragment {
     private void showNoFriendsUI() {
         if (binding == null) return;
         binding.friendsRecyclerView.setVisibility(View.GONE);
-        binding.emptyFriendsTextView.setVisibility(View.VISIBLE);
+        if (!isAdminUser) {
+            binding.emptyFriendsTextView.setVisibility(View.VISIBLE);
+        } else {
+            binding.emptyFriendsTextView.setVisibility(View.GONE);
+        }
     }
 
     @Override
