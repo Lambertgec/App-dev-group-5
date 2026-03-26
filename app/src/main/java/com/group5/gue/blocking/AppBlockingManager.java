@@ -23,6 +23,17 @@ public class AppBlockingManager {
     public AppBlockingManager(Context context) {
         this.context = context;
         this.prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+
+        this.addBlockedApp("com.android.chrome");
+        this.addBlockedApp("com.google.android.youtube");
+        this.addBlockedApp("app.revanced.android.youtube");
+        this.addBlockedApp("com.instagram.android");
+        this.addBlockedApp("com.facebook.katana");
+        this.addBlockedApp("com.facebook.orca");
+        this.addBlockedApp("com.facebook.lite");
+        this.addBlockedApp("com.facebook.mlite");
+        this.addBlockedApp("com.discord");
+
     }
 
     public boolean isBlockingEnabled() {

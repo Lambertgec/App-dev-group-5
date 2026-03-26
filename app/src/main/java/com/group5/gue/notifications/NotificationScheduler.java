@@ -95,4 +95,27 @@ public class NotificationScheduler {
                 pendingIntent
         );
     }
+
+    public static void scheduleCatchUp(Context context, Event event) {
+        long now = System.currentTimeMillis();
+        long thirtyMinMark = event.getStartTime() - (30 * 60 * 1000);
+        long fiveMinMark = event.getStartTime() - (10 * 60 * 1000);
+
+        // 30-min window has passed but 5-min hasn't — fire 30-min notification now
+        if (now >= thirtyMinMark && now < fiveMinMark) {
+            fireImmediately(context, event, "30 minutes");
+        }
+        // 10-min window has passed but lecture hasn't started — fire both missed notifications now
+        else if (now >= fiveMinMark && now < event.getStartTime()) {
+            fireImmediately(context, event, "10 minutes");
+        }
+    }
+
+    private static void fireImmediately(Context context, Event event, String minuteLabel) {
+        Intent intent = new Intent(context, NotificationReceiver.class);
+        intent.putExtra("title", event.title);
+        intent.putExtra("location", event.getLocation());
+        intent.putExtra("label", minuteLabel);
+        context.sendBroadcast(intent);
+    }
 }
