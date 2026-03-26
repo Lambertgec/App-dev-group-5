@@ -127,7 +127,7 @@ public class CalendarFragment extends Fragment {
 
         // Filter out events that have already started
         long now = System.currentTimeMillis();
-        events.removeIf(event -> event.getStartTime() < now);
+        events.removeIf(event -> event.getEndTime() < now);
 
         // Schedule notifications + catch-up for all events
         for (Event event : events) {
@@ -160,7 +160,7 @@ public class CalendarFragment extends Fragment {
         daySelection = System.currentTimeMillis() - (System.currentTimeMillis() % 86400000);
         ArrayList<Event> events = calendarHandler.getAllEvents();
         long now = System.currentTimeMillis();
-        events.removeIf(event -> event.getStartTime() < now);
+        events.removeIf(event -> event.getEndTime() < now);
         populateView(events, "All events");
     }
 
@@ -170,8 +170,9 @@ public class CalendarFragment extends Fragment {
         }
         if (eventAdapter != null) {
             eventAdapter.setEvents(events);
+            recyclerView.post(() -> eventAdapter.notifyDataSetChanged()); // force remeasure
         }
-        
+
         if (events.isEmpty()) {
             Log.d("CalendarFragment", "No events found");
         }
