@@ -162,7 +162,8 @@ public class VerificationCodeFragment extends Fragment {
         Button verifyButton = v.findViewById(R.id.verifyButton);
 
         verifyButton.setOnClickListener(v1 -> {
-            String enteredCode = codeInput.getText().toString();
+            String enteredCode = "";
+            enteredCode = codeInput.getText().toString();
 
             CalendarHandler calendarHandler = new CalendarHandler(requireActivity().getContentResolver());
             if (CalendarHandler.selectedCalendar != null) {
