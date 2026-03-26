@@ -17,7 +17,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.group5.gue.blocking.AppBlockingManager;
 import com.group5.gue.data.annotation.AnnotationRepository;
 import com.group5.gue.data.model.Annotation;
 import com.group5.gue.data.model.User;
@@ -37,7 +36,7 @@ public class VerificationCodeFragment extends Fragment {
 
     private static final String PREFS_LECTURE = "lecture_prefs";
     private static final String KEY_LECTURE_END_TIME = "lecture_end_time";
-    private static final String KEY_ATTENDANCE_VERIFIED = "attendance_verified";
+    private static final String KEY_CODE_VERIFIED = "attendance_verified";
 
     public VerificationCodeFragment() {
         // Required empty public constructor
@@ -146,25 +145,20 @@ public class VerificationCodeFragment extends Fragment {
             Event currentEvent = ongoingEvents.get(0);
             String expectedCode = formatCode(generateCode(currentEvent.location, currentEvent.startTime));
 
-            if (enteredCode.equals(expectedCode)) {
-                Toast.makeText(getContext(), "Code Correct! Apps blocked for the duration of the lecture.", Toast.LENGTH_LONG).show();
-                enableAppBlocking(currentEvent.endTime);
+            if (enteredCode.equals(expectedCode)) { // || enteredCode.equals("000000")) {
+                
+                // Save verification status for both Worker and AppBlockingService
+                requireContext().getSharedPreferences(PREFS_LECTURE, Context.MODE_PRIVATE)
+                        .edit()
+                        .putBoolean(KEY_CODE_VERIFIED, true)
+                        .putLong(KEY_LECTURE_END_TIME, currentEvent.endTime)
+                        .apply();
+
+                
             } else {
                 Toast.makeText(getContext(), "Invalid Code!", Toast.LENGTH_SHORT).show();
             }
         });
-    }
-
-    private void enableAppBlocking(long endTime) {
-        AppBlockingManager blockingManager = new AppBlockingManager(requireContext());
-
-        requireContext().getSharedPreferences(PREFS_LECTURE, Context.MODE_PRIVATE)
-                .edit()
-                .putBoolean(KEY_ATTENDANCE_VERIFIED, true)
-                .putLong(KEY_LECTURE_END_TIME, endTime)
-                .apply();
-
-        blockingManager.startBlockingService();
     }
 
     public static int generateCode(String location, Long time) {
