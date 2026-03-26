@@ -19,10 +19,6 @@ public class NotificationScheduler {
             return;
         }
 
-        if (triggerTime < System.currentTimeMillis()) {
-            return;
-        }
-
         Intent intent = new Intent(context, NotificationReceiver.class);
         intent.putExtra("title", event.title);
         intent.putExtra("location", event.getLocation());
