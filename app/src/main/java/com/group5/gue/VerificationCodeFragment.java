@@ -8,6 +8,9 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
+import androidx.work.WorkRequest;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -188,7 +191,8 @@ public class VerificationCodeFragment extends Fragment {
                         .putBoolean(KEY_CODE_VERIFIED, true)
                         .putLong(KEY_LECTURE_END_TIME, currentEvent.endTime)
                         .apply();
-                
+
+                    AttendanceCheckWorker.oneTimeWork(requireContext());
                 } else {
                     Toast.makeText(getContext(), "Invalid Code!", Toast.LENGTH_SHORT).show();
                 }

@@ -88,7 +88,7 @@ public class AppBlockingService extends Service {
     }
 
     private void checkForegroundApp() {
-        if (!shouldBlock()) {
+        if (!blockingManager.isBlockingEnabled()) {
             return;
         }
 
@@ -101,13 +101,6 @@ public class AppBlockingService extends Service {
         }
     }
 
-    private boolean shouldBlock() {
-//        attendance (managed by attendance check wroker) and confirmed in user pref
-        SharedPreferences prefs = getApplicationContext().getSharedPreferences(PREFS_LECTURE, Context.MODE_PRIVATE);
-        boolean attendance = prefs.getBoolean(KEY_IN_ATTENDANCE, false);
-
-        return blockingManager.isBlockingEnabled() && attendance;
-    }
 
     private String getForegroundApp() {
         UsageStatsManager usm = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);

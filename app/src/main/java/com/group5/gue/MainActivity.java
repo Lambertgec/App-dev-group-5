@@ -1,5 +1,6 @@
 package com.group5.gue;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.content.Context;
 import android.os.Bundle;
@@ -40,7 +41,6 @@ public class MainActivity extends AppCompatActivity {
             new PeriodicWorkRequest.Builder(AttendanceCheckWorker.class, 15, TimeUnit.MINUTES)
                     .build();
     ActivityMainBinding binding;
-    private AppBlockingManager blockingManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -111,33 +111,8 @@ public class MainActivity extends AppCompatActivity {
         MenuInflater menuInflater = new MenuInflater(this);
         menuInflater.inflate(R.menu.top_menu, menu);
 
-        if (blockingManager == null) {
-            blockingManager = new AppBlockingManager(this);
-        }
-
-        if (blockingManager.isBlockingEnabled()) {
-            PermissionHandler permissionHandler = new PermissionHandler(this);
-            permissionHandler.requestAppBlocking();
-
-            blockingManager.addBlockedApp("com.android.chrome");
-            blockingManager.addBlockedApp("com.google.android.youtube");
-            blockingManager.addBlockedApp("app.revanced.android.youtube");
-            blockingManager.addBlockedApp("com.instagram.android");
-            blockingManager.addBlockedApp("com.facebook.katana");
-            blockingManager.addBlockedApp("com.facebook.orca");
-            blockingManager.addBlockedApp("com.facebook.lite");
-            blockingManager.addBlockedApp("com.facebook.mlite");
-            blockingManager.addBlockedApp("com.discord");
-
-            try {
-                blockingManager.startBlockingService();
-            } catch (Exception e) {
-                Toast.makeText(this, "Error starting app blocking: " + e.getMessage(), Toast.LENGTH_LONG).show();
-            }
-
-        } else {
-            Toast.makeText(this, "App blocking is disabled", Toast.LENGTH_SHORT).show();
-        }
+        PermissionHandler permissionHandler = new PermissionHandler(this);
+        permissionHandler.requestAppBlocking();
 
         MenuItem profile = menu.findItem(R.id.profile);
         profile.setOnMenuItemClickListener(item -> {
