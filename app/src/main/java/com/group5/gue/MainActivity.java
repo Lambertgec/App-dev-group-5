@@ -2,7 +2,6 @@ package com.group5.gue;
 
 import android.content.Intent;
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -10,20 +9,12 @@ import android.view.MenuItem;
 import android.widget.Toast;
 
 import androidx.appcompat.widget.Toolbar;
-import android.util.Log;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 
-import androidx.work.OneTimeWorkRequest;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import androidx.appcompat.widget.Toolbar;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -36,9 +27,7 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.group5.gue.blocking.AppBlockingManager;
 import com.group5.gue.data.PermissionHandler;
-import com.group5.gue.data.attendance.AttendanceRepository;
 import com.group5.gue.data.auth.AuthManager;
-import com.group5.gue.data.model.AttendanceRecord;
 import com.group5.gue.notifications.NotificationScheduler;
 import com.group5.gue.ui.login.launcher.LauncherActivity;
 
@@ -97,8 +86,6 @@ public class MainActivity extends AppCompatActivity {
            return true;
         });
 
-        blockingManager = new AppBlockingManager(this);
-
         if (CalendarHandler.selectedCalendar != null) {
             CalendarHandler handler = new CalendarHandler(getContentResolver());
             handler.setCalendar(CalendarHandler.selectedCalendar);
@@ -121,6 +108,10 @@ public class MainActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater menuInflater = new MenuInflater(this);
         menuInflater.inflate(R.menu.top_menu, menu);
+
+        if (blockingManager == null) {
+            blockingManager = new AppBlockingManager(this);
+        }
 
         if (blockingManager.isBlockingEnabled()) {
             PermissionHandler permissionHandler = new PermissionHandler(this);

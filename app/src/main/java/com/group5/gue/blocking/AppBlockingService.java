@@ -24,10 +24,9 @@ public class AppBlockingService extends Service {
     private static final String CHANNEL_ID = "AppBlockingChannel";
     private static final int NOTIFICATION_ID = 12345;
     private static final long CHECK_INTERVAL = 500;
-
     private static final String PREFS_LECTURE = "lecture_prefs";
-    private static final String KEY_LECTURE_END_TIME = "lecture_end_time";
-    private static final String KEY_ATTENDANCE_VERIFIED = "attendance_verified";
+    private static final String KEY_IN_ATTENDANCE = "in_attendance";
+
 
     private Handler handler;
     private Runnable checkAppRunnable;
@@ -103,20 +102,11 @@ public class AppBlockingService extends Service {
     }
 
     private boolean shouldBlock() {
-        SharedPreferences lecturePrefs = getSharedPreferences(PREFS_LECTURE, Context.MODE_PRIVATE);
-        boolean isAttendanceVerified = lecturePrefs.getBoolean(KEY_ATTENDANCE_VERIFIED, false);
-        long lectureEndTime = lecturePrefs.getLong(KEY_LECTURE_END_TIME, 0);
+//        attendance (managed by attendance check wroker) and confirmed in user pref
+        SharedPreferences prefs = getApplicationContext().getSharedPreferences(PREFS_LECTURE, Context.MODE_PRIVATE);
+        boolean attendance = prefs.getBoolean(KEY_IN_ATTENDANCE, false);
 
-        if (isAttendanceVerified) {
-//            in lecture AND user has blocking on
-            if (System.currentTimeMillis() < lectureEndTime) {
-                return blockingManager.isBlockingEnabled();
-            } else {
-                lecturePrefs.edit().putBoolean(KEY_ATTENDANCE_VERIFIED, false).apply();
-            }
-        }
-
-        return false;
+        return blockingManager.isBlockingEnabled() && attendance;
     }
 
     private String getForegroundApp() {
