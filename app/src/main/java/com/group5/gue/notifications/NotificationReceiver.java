@@ -44,10 +44,12 @@ public class NotificationReceiver extends BroadcastReceiver {
                 clickIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
+        String label = intent.getStringExtra("label");
+        String reminderText = label != null ? label : "30 minutes";
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setContentTitle("Lecture starting soon")
+                .setContentTitle("Lecture starting in " + reminderText + "!")
                 .setContentText(title + " at " + location)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setContentIntent(pendingIntent)

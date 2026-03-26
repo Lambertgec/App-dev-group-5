@@ -17,6 +17,8 @@ import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import com.group5.gue.notifications.NotificationScheduler;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,6 +124,18 @@ public class CalendarFragment extends Fragment {
                 .apply();
 
         ArrayList<Event> events = calendarHandler.getAllEvents();
+
+        // Filter out events that have already started
+        long now = System.currentTimeMillis();
+        events.removeIf(event -> event.getStartTime() < now);
+
+        // Schedule notifications + catch-up for all events
+        for (Event event : events) {
+            NotificationScheduler.scheduleNotification(requireContext(), event);
+            NotificationScheduler.scheduleProximityNotification(requireContext(), event);
+            NotificationScheduler.scheduleCatchUp(requireContext(), event);
+        }
+
         populateView(events, "All events");
 
         View datePicker = getView().findViewById(R.id.SectionDatePicker);
@@ -144,7 +158,10 @@ public class CalendarFragment extends Fragment {
 
     private void resetTime() {
         daySelection = System.currentTimeMillis() - (System.currentTimeMillis() % 86400000);
-        populateView(calendarHandler.getAllEvents(), "All events");
+        ArrayList<Event> events = calendarHandler.getAllEvents();
+        long now = System.currentTimeMillis();
+        events.removeIf(event -> event.getStartTime() < now);
+        populateView(events, "All events");
     }
 
     private void populateView(ArrayList<Event> events, String dateText) {

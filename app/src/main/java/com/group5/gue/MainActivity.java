@@ -93,8 +93,9 @@ public class MainActivity extends AppCompatActivity {
             ArrayList<Event> events = handler.getFutureEvents();
 
             for (Event event : events) {
-                NotificationScheduler.scheduleNotification(this, event);
-                NotificationScheduler.scheduleProximityNotification(this, event);
+                NotificationScheduler.scheduleNotification(this, event);         // 30-min alarm
+                NotificationScheduler.scheduleProximityNotification(this, event); // 5-min alarm
+                NotificationScheduler.scheduleCatchUp(this, event);              // missed catch-up
             }
         }
 

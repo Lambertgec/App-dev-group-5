@@ -102,8 +102,8 @@ public class CalendarHandler {
     public ArrayList<Event> getDay(Long startOfDay) {
         String selection =
                 CalendarContract.Events.CALENDAR_DISPLAY_NAME + " = ? AND " +
-                        CalendarContract.Events.DTSTART + " <= ? AND " +
-                        CalendarContract.Events.DTEND + " >= ?";
+                        CalendarContract.Events.DTSTART + " >= ? AND " +
+                        CalendarContract.Events.DTSTART + " < ?";
 
         String[] selectionArgs = new String[]{
                 this.calendarName,
