@@ -508,26 +508,30 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private void markLocation(String location) {
         if (annotationList == null) return;
 
-        String[] parts = location.split(" ");
+        String[] parts = location.split(" ", 2);
 
-        if (parts.length < 2) {
+        if (parts.length == 0) {
             Log.e("MAP_DEBUG", "Invalid location format: " + location);
             return;
         }
 
         String building = parts[0];
-        String room = parts[1];
+        String room = parts.length > 1 ? parts[1] : null; // null if building-only
 
         Annotation currentLocation = null;
 
-        for (Annotation annotation : annotationList) {
-            if (building.equalsIgnoreCase(annotation.getBuilding()) &&
-                    room.equalsIgnoreCase(annotation.getRoomName())) {
-                currentLocation = annotation;
-                break;
+        // Try exact building + room match first (only if room exists)
+        if (room != null) {
+            for (Annotation annotation : annotationList) {
+                if (building.equalsIgnoreCase(annotation.getBuilding()) &&
+                        room.equalsIgnoreCase(annotation.getRoomName())) {
+                    currentLocation = annotation;
+                    break;
+                }
             }
         }
 
+        // Fall back to building-only match
         if (currentLocation == null) {
             for (Annotation annotation : annotationList) {
                 if (building.equalsIgnoreCase(annotation.getBuilding())) {
