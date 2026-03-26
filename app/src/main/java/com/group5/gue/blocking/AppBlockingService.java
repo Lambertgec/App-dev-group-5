@@ -17,33 +17,38 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
+import com.group5.gue.ProximityChecker;
 import com.group5.gue.R;
+import com.group5.gue.VerificationCodeFragment;
 
 public class AppBlockingService extends Service {
     private static final String TAG = "AppBlockingService";
     private static final String CHANNEL_ID = "AppBlockingChannel";
     private static final int NOTIFICATION_ID = 12345;
     private static final long CHECK_INTERVAL = 500;
+    private static final long PROXIMITY_CHECK_INTERVAL = 30000; // Check proximity every 30 seconds
     private static final String PREFS_LECTURE = "lecture_prefs";
-    private static final String KEY_IN_ATTENDANCE = "in_attendance";
-
 
     private Handler handler;
     private Runnable checkAppRunnable;
+    private Runnable proximityCheckRunnable;
     private String ownPackageName;
     private AppBlockingManager blockingManager;
+    private ProximityChecker proximityChecker;
 
     @Override
     public void onCreate() {
         super.onCreate();
         ownPackageName = getPackageName();
         blockingManager = new AppBlockingManager(this);
+        proximityChecker = new ProximityChecker(this);
         handler = new Handler();
         
         createNotificationChannel();
         startForeground(NOTIFICATION_ID, createNotification());
         
         startMonitoring();
+        startProximityMonitoring();
         Log.d(TAG, "AppBlockingService started");
     }
 
@@ -62,7 +67,7 @@ public class AppBlockingService extends Service {
     private Notification createNotification() {
         return new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("Blocking apps")
-                .setContentText("persistent notification to keep service active")
+                .setContentText("Monitoring for focused apps during lecture")
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .build();
     }
@@ -80,11 +85,67 @@ public class AppBlockingService extends Service {
         checkAppRunnable = new Runnable() {
             @Override
             public void run() {
+                if (shouldStopBlocking()) {
+                    stopSelf();
+                    return;
+                }
                 checkForegroundApp();
                 handler.postDelayed(this, CHECK_INTERVAL);
             }
         };
         handler.post(checkAppRunnable);
+    }
+
+    private void startProximityMonitoring() {
+        proximityCheckRunnable = new Runnable() {
+            @Override
+            public void run() {
+                checkProximity();
+                handler.postDelayed(this, PROXIMITY_CHECK_INTERVAL);
+            }
+        };
+        handler.post(proximityCheckRunnable);
+    }
+
+    private boolean shouldStopBlocking() {
+        SharedPreferences prefs = getSharedPreferences(PREFS_LECTURE, Context.MODE_PRIVATE);
+        long endTime = prefs.getLong(VerificationCodeFragment.KEY_LECTURE_END_TIME, 0);
+        
+        if (System.currentTimeMillis() > endTime) {
+            Log.d(TAG, "Stopping service: Lecture ended");
+            disableBlocking();
+            return true;
+        }
+        
+        return false;
+    }
+
+    private void checkProximity() {
+        SharedPreferences prefs = getSharedPreferences(PREFS_LECTURE, Context.MODE_PRIVATE);
+        String building = prefs.getString(VerificationCodeFragment.KEY_LECTURE_BUILDING, "");
+        String room = prefs.getString(VerificationCodeFragment.KEY_LECTURE_ROOM, "");
+
+        if (building.isEmpty()) return;
+
+        proximityChecker.check(building, room, 50.0, null, isNearby -> {
+            if (!isNearby) {
+                Log.d(TAG, "Stopping service: User moved outside 50m proximity");
+                disableBlocking();
+                stopSelf();
+            }
+        });
+    }
+
+    private void disableBlocking() {
+        getSharedPreferences(AppBlockingManager.PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean(AppBlockingManager.KEY_BLOCKING_ENABLED, false)
+                .apply();
+        
+        getSharedPreferences(PREFS_LECTURE, Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean(VerificationCodeFragment.KEY_CODE_VERIFIED, false)
+                .apply();
     }
 
     private void checkForegroundApp() {
@@ -100,7 +161,6 @@ public class AppBlockingService extends Service {
             }
         }
     }
-
 
     private String getForegroundApp() {
         UsageStatsManager usm = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
@@ -134,6 +194,9 @@ public class AppBlockingService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (handler != null) handler.removeCallbacks(checkAppRunnable);
+        if (handler != null) {
+            handler.removeCallbacks(checkAppRunnable);
+            handler.removeCallbacks(proximityCheckRunnable);
+        }
     }
 }
