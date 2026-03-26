@@ -94,6 +94,7 @@ public class MainActivity extends AppCompatActivity {
 
             for (Event event : events) {
                 NotificationScheduler.scheduleNotification(this, event);
+                NotificationScheduler.scheduleProximityNotification(this, event);
             }
         }
 

@@ -84,6 +84,8 @@
         <receiver
             android:name=".notifications.NotificationReceiver"
             android:exported="false" />
+        <receiver android:name=".notifications.ProximityNotificationReceiver"
+            android:exported="false" />
 
         <!-- API key for Google Maps is stored in local properties and is imported here -->
         <meta-data
