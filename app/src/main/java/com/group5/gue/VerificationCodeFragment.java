@@ -1,18 +1,17 @@
 package com.group5.gue;
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.app.TimePickerDialog;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.work.OneTimeWorkRequest;
-import androidx.work.WorkManager;
-import androidx.work.WorkRequest;
 
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,6 +20,9 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.group5.gue.blocking.AppBlockingManager;
+import com.group5.gue.data.PermissionHandler;
 import com.group5.gue.databinding.FragmentVerificationCodeBinding;
 import com.group5.gue.data.friends.FriendsRepository;
 
@@ -42,8 +44,10 @@ import java.util.Locale;
 public class VerificationCodeFragment extends Fragment {
 
     private static final String PREFS_LECTURE = "lecture_prefs";
-    private static final String KEY_LECTURE_END_TIME = "lecture_end_time";
-    private static final String KEY_CODE_VERIFIED = "attendance_verified";
+    public static final String KEY_LECTURE_END_TIME = "lecture_end_time";
+    public static final String KEY_CODE_VERIFIED = "attendance_verified";
+    public static final String KEY_LECTURE_BUILDING = "lecture_building";
+    public static final String KEY_LECTURE_ROOM = "lecture_room";
 
     public VerificationCodeFragment() {
         // Required empty public constructor
@@ -171,37 +175,56 @@ public class VerificationCodeFragment extends Fragment {
                 return;
             }
 
-//            timedit never has multiple at the same time so we can disregard extras
             Event currentEvent = ongoingEvents.get(0);
+            
+            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                new PermissionHandler(requireActivity()).requestPermission(Manifest.permission.ACCESS_FINE_LOCATION);
+                return;
+            }
 
-//            ProximityChecker proximityChecker = new ProximityChecker(requireContext());
-//            proximityChecker.check(currentEvent.location, "", 50.0, null, isNearby -> {
-//                if (!isNearby) {
-//                    requireActivity().runOnUiThread(() ->
-//                            Toast.makeText(getContext(), "You are not near the lecture building", Toast.LENGTH_SHORT).show()
-//                    );
-//                    return;
-//                }
-                String location[] = currentEvent.location.split(" ");
-//                Toast.makeText(getContext(), location[0].toString(), Toast.LENGTH_LONG).show();
+            ProximityChecker proximityChecker = new ProximityChecker(requireContext());
+            String[] location = currentEvent.location.split(" ");
+            String building = location[0];
+            String room = location.length > 1 ? location[1] : "";
 
-                String expectedCode = formatCode(generateCode(location[0], currentEvent.startTime));
+            proximityChecker.check(building, room, 100.0, null, isNearby -> {
+                if (getActivity() == null) return;
+                getActivity().runOnUiThread(() -> {
+                    if (!isNearby) {
+                        Toast.makeText(getContext(), "You are not near the lecture building (" + building + ")", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
 
-                if (enteredCode.equals(expectedCode)) { // || enteredCode.equals("000000")) {
-                    Toast.makeText(getContext(), "Attendance Verified!", Toast.LENGTH_SHORT).show();
-                // Save verification status for both Worker and AppBlockingService
-                    requireContext().getSharedPreferences(PREFS_LECTURE, Context.MODE_PRIVATE)
-                        .edit()
-                        .putBoolean(KEY_CODE_VERIFIED, true)
-                        .putLong(KEY_LECTURE_END_TIME, currentEvent.endTime)
-                        .apply();
+                    String expectedCode = formatCode(generateCode(building, currentEvent.startTime));
 
-                    AttendanceCheckWorker.oneTimeWork(requireContext());
-                } else {
-                    Toast.makeText(getContext(), "Invalid Code!", Toast.LENGTH_SHORT).show();
-                }
+                    if (enteredCode.equals(expectedCode)) {
+                        Toast.makeText(getContext(), "Code verified, app blocking started!", Toast.LENGTH_SHORT).show();
+
+                        requireContext().getSharedPreferences(PREFS_LECTURE, Context.MODE_PRIVATE)
+                            .edit()
+                            .putBoolean(KEY_CODE_VERIFIED, true)
+                            .putLong(KEY_LECTURE_END_TIME, currentEvent.endTime)
+                            .putString(KEY_LECTURE_BUILDING, building)
+                            .putString(KEY_LECTURE_ROOM, room)
+                            .apply();
+
+                        AppBlockingManager blockingManager = new AppBlockingManager(requireContext());
+                        requireContext().getSharedPreferences(AppBlockingManager.PREFS_NAME, Context.MODE_PRIVATE)
+                                .edit()
+                                .putBoolean(AppBlockingManager.KEY_BLOCKING_ENABLED, true)
+                                .apply();
+                        
+                        PermissionHandler permissionHandler = new PermissionHandler(requireActivity());
+                        permissionHandler.requestAppBlocking();
+                        blockingManager.startBlockingService();
+
+                        AttendanceCheckWorker.oneTimeWork(requireContext());
+                    } else {
+                        Toast.makeText(getContext(), "Invalid Code!", Toast.LENGTH_SHORT).show();
+                    }
+                });
             });
-//        });
+        });
     }
 
     public static int generateCode(String location, Long time) {
