@@ -47,30 +47,22 @@ public class HomeFragment extends Fragment {
 
         repository.isAdmin(isAdmin -> {
             if (binding == null) return Unit.INSTANCE;
-            Button collectiblesButton = view.findViewById(R.id.collectiblesButton);
-            FragmentTransaction tr = getChildFragmentManager().beginTransaction();
-
-            Fragment collectFragment = new CollectFragment();
-            tr.add(R.id.full_view, collectFragment).hide(collectFragment);
-
 
             if (isAdmin) {
-                binding.homeTitle.setVisibility(View.VISIBLE);
                 binding.homeTitle.setText("Admin Dashboard");
-
-                Fragment verificationCode = new VerificationCodeFragment();
-                tr.add(R.id.full_view, verificationCode).show(verificationCode).commit();
-
+                // Hide the calendar for admins
                 binding.frameLayout.setVisibility(View.GONE);
                 binding.showCalendarButton.setVisibility(View.GONE);
             } else {
-                binding.homeTitle.setVisibility(View.VISIBLE);
                 binding.homeTitle.setText("Welcome back");
-
+                // Show calendar for users
                 binding.frameLayout.setVisibility(View.VISIBLE);
-
                 handleCalendarLogic();
             }
+
+            getChildFragmentManager().beginTransaction()
+                    .replace(R.id.verificationContainer, new VerificationCodeFragment())
+                    .commitAllowingStateLoss();
 
             return Unit.INSTANCE;
         });
