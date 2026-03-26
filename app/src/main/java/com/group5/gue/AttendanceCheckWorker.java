@@ -8,8 +8,11 @@ import androidx.annotation.NonNull;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
+import com.group5.gue.api.BaseRepository;
 import com.group5.gue.data.attendance.AttendanceRepository;
 import com.group5.gue.data.model.AttendanceRecord;
+import com.group5.gue.data.model.User;
+import com.group5.gue.data.user.UserRepository;
 
 import java.util.ArrayList;
 
@@ -36,7 +39,7 @@ public class AttendanceCheckWorker extends Worker {
         Context context = getApplicationContext();
         SharedPreferences prefs = context.getSharedPreferences(PREFS_LECTURE, Context.MODE_PRIVATE);
 
-        // 1. Check if the user has entered a valid code for the current lecture
+        // Check if the user has entered a valid code for the current lecture
         boolean isVerified = prefs.getBoolean(KEY_CODE_VERIFIED, false);
         long lectureEndTime = prefs.getLong(KEY_LECTURE_END_TIME, 0);
 
@@ -111,6 +114,27 @@ public class AttendanceCheckWorker extends Worker {
 
             AttendanceRepository repo = AttendanceRepository.getInstance(context);
             boolean saved = repo.saveIfNotDuplicate(record);
+
+            if (saved) {
+                User user = UserRepository.Companion.getInstance().getCachedUser();
+                if (user != null) {
+
+//                    lecture time in minutes
+                    int pts = (int) (event.endTime - event.startTime) / 60000;
+
+                    User updatedUser = user.copy(
+                            user.getId(),
+                            user.getName(),
+                            user.getScore() + pts,
+                            user.isAdmin()
+                    );
+
+                    UserRepository.Companion.getInstance().updateUser(updatedUser, result -> {
+                        Log.d(TAG, result.toString());
+                    });
+                }
+            }
+
             Log.d(TAG, saved ? "Attendance recorded for: " + event.title
                     : "Duplicate, skipping: " + event.title);
         }
