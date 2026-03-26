@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -5,12 +7,17 @@ plugins {
     id("jacoco")
 }
 
-val apiKey: String = project.findProperty("API_KEY") as String? ?: ""
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
+}
+
+val apiKey: String = localProperties.getProperty("API_KEY")
+    ?: throw GradleException("API_KEY NOT FOUND in local.properties")
 android {
     namespace = "com.group5.gue"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.group5.gue"
@@ -33,7 +40,6 @@ android {
                 "proguard-rules.pro"
             )
         }
-
         debug {
             enableUnitTestCoverage = true
             enableAndroidTestCoverage = true
