@@ -12,6 +12,7 @@ import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManager;
 import androidx.work.WorkRequest;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -173,15 +174,18 @@ public class VerificationCodeFragment extends Fragment {
 //            timedit never has multiple at the same time so we can disregard extras
             Event currentEvent = ongoingEvents.get(0);
 
-            ProximityChecker proximityChecker = new ProximityChecker(requireContext());
-            proximityChecker.check(currentEvent.location, "", 50.0, null, isNearby -> {
-                if (!isNearby) {
-                    requireActivity().runOnUiThread(() ->
-                            Toast.makeText(getContext(), "You are not near the lecture building", Toast.LENGTH_SHORT).show()
-                    );
-                    return;
-                }
-                String expectedCode = formatCode(generateCode(currentEvent.location, currentEvent.startTime));
+//            ProximityChecker proximityChecker = new ProximityChecker(requireContext());
+//            proximityChecker.check(currentEvent.location, "", 50.0, null, isNearby -> {
+//                if (!isNearby) {
+//                    requireActivity().runOnUiThread(() ->
+//                            Toast.makeText(getContext(), "You are not near the lecture building", Toast.LENGTH_SHORT).show()
+//                    );
+//                    return;
+//                }
+                String location[] = currentEvent.location.split(" ");
+//                Toast.makeText(getContext(), location[0].toString(), Toast.LENGTH_LONG).show();
+
+                String expectedCode = formatCode(generateCode(location[0], currentEvent.startTime));
 
                 if (enteredCode.equals(expectedCode)) { // || enteredCode.equals("000000")) {
                     Toast.makeText(getContext(), "Attendance Verified!", Toast.LENGTH_SHORT).show();
@@ -197,7 +201,7 @@ public class VerificationCodeFragment extends Fragment {
                     Toast.makeText(getContext(), "Invalid Code!", Toast.LENGTH_SHORT).show();
                 }
             });
-        });
+//        });
     }
 
     public static int generateCode(String location, Long time) {
