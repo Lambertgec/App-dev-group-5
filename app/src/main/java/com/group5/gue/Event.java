@@ -2,9 +2,9 @@ package com.group5.gue;
 
 public class Event {
     public String title;
-    long startTime;
-    long endTime;
-    String location;
+    public long startTime;
+    public long endTime;
+    public String location;
 
     @Override
     public String toString() {
