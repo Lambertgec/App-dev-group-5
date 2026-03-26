@@ -13,6 +13,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import androidx.activity.EdgeToEdge;
@@ -27,6 +28,7 @@ import androidx.fragment.app.FragmentTransaction;
 import com.group5.gue.blocking.AppBlockingManager;
 import com.group5.gue.data.PermissionHandler;
 import com.group5.gue.data.auth.AuthManager;
+import com.group5.gue.notifications.NotificationScheduler;
 import com.group5.gue.ui.login.launcher.LauncherActivity;
 
 import com.group5.gue.databinding.ActivityMainBinding;
@@ -83,6 +85,23 @@ public class MainActivity extends AppCompatActivity {
            }
            return true;
         });
+
+        if (CalendarHandler.selectedCalendar != null) {
+            CalendarHandler handler = new CalendarHandler(getContentResolver());
+            handler.setCalendar(CalendarHandler.selectedCalendar);
+
+            ArrayList<Event> events = handler.getFutureEvents();
+
+            for (Event event : events) {
+                NotificationScheduler.scheduleNotification(this, event);
+            }
+        }
+
+        Intent intent = getIntent();
+
+        if (intent != null && "map".equals(intent.getStringExtra("open_tab"))) {
+            switchFragmant(new MapFragment());
+        }
     }
 
     @Override

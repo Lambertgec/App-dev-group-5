@@ -52,6 +52,25 @@ class FriendsRepository private constructor() : BaseRepository {
         }
     }
 
+    fun isAdmin(callback: (Boolean) -> Unit) {
+        scope.launch {
+            val currentUserId = client.auth.currentSessionOrNull()?.user?.id
+            if (currentUserId == null) {
+                withContext(Dispatchers.Main) { callback(false) }
+                return@launch
+            }
+            try {
+                val profile = client.from("profile").select {
+                    filter { eq("id", currentUserId) }
+                }.decodeSingleOrNull<Profile>()
+                withContext(Dispatchers.Main) { callback(profile?.isAdmin ?: false) }
+            } catch (e: Exception) {
+                Log.e("FriendsRepository", "isAdmin check error", e)
+                withContext(Dispatchers.Main) { callback(false) }
+            }
+        }
+    }
+
     /**
      * Fetch the list of friends for the current user signed in.
      */

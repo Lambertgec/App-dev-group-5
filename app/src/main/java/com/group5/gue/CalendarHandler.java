@@ -147,33 +147,22 @@ public class CalendarHandler {
         return eventList;
     }
 
+    public ArrayList<Event> getFutureEvents() {
+        String selection =
+                CalendarContract.Events.CALENDAR_DISPLAY_NAME + " = ? AND " +
+                        CalendarContract.Events.DTSTART + " >= ?";
+
+        String[] selectionArgs = new String[]{
+                this.calendarName,
+                String.valueOf(System.currentTimeMillis())
+        };
+
+        return submitQuery(selection, selectionArgs);
+    }
+
     void setCalendar(String calendarName) {
         this.calendarName = calendarName;
     }
 
 }
 
-class Event {
-    String title;
-    long startTime;
-    long endTime;
-    String location;
-
-    @Override
-    public String toString() {
-        return "Event{" +
-                "title='" + title + '\'' +
-                ", startTime=" + startTime +
-                ", endTime=" + endTime +
-                ", location='" + location + '\'' +
-                '}';
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public long getStartTime() {
-        return startTime;
-    }
-}
