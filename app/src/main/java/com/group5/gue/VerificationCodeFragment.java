@@ -11,6 +11,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -162,8 +164,7 @@ public class VerificationCodeFragment extends Fragment {
         Button verifyButton = v.findViewById(R.id.verifyButton);
 
         verifyButton.setOnClickListener(v1 -> {
-            String enteredCode = "";
-            enteredCode = codeInput.getText().toString();
+            final String enteredCode = codeInput.getText().toString();
 
             CalendarHandler calendarHandler = new CalendarHandler(requireActivity().getContentResolver());
             if (CalendarHandler.selectedCalendar != null) {
@@ -176,7 +177,7 @@ public class VerificationCodeFragment extends Fragment {
                 return;
             }
 
-            Event currentEvent = ongoingEvents.get(0);
+            final Event currentEvent = ongoingEvents.get(0);
             
             if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 new PermissionHandler(requireActivity()).requestPermission(Manifest.permission.ACCESS_FINE_LOCATION);
@@ -185,8 +186,8 @@ public class VerificationCodeFragment extends Fragment {
 
             ProximityChecker proximityChecker = new ProximityChecker(requireContext());
             String[] location = currentEvent.location.split(" ");
-            String building = location[0];
-            String room = location.length > 1 ? location[1] : "";
+            final String building = location[0];
+            final String room = location.length > 1 ? location[1] : "";
 
             proximityChecker.check(building, room, 100.0, null, isNearby -> {
                 if (getActivity() == null) return;
@@ -219,7 +220,9 @@ public class VerificationCodeFragment extends Fragment {
                         permissionHandler.requestAppBlocking();
                         blockingManager.startBlockingService();
 
-                        AttendanceCheckWorker.oneTimeWork(requireContext());
+                        OneTimeWorkRequest workRequest = new OneTimeWorkRequest.Builder(AttendanceCheckWorker.class).build();
+                        WorkManager.getInstance(requireContext()).enqueue(workRequest);
+
                     } else {
                         Toast.makeText(getContext(), "Invalid Code!", Toast.LENGTH_SHORT).show();
                     }
