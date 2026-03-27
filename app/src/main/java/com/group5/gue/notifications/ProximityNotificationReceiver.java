@@ -54,8 +54,8 @@ public class ProximityNotificationReceiver extends BroadcastReceiver {
         NotificationCompat.Builder builder =
                 new NotificationCompat.Builder(context, channelId)
                         .setSmallIcon(android.R.drawable.ic_dialog_info)
-                        .setContentTitle("You can submit your attendance!")
-                        .setContentText(title + " at " + location)
+                        .setContentTitle("Lecture starts in 10 minutes!")
+                        .setContentText("You can input your verification code for " + title + " in 10 minutes.")
                         .setPriority(NotificationCompat.PRIORITY_HIGH)
                         .setContentIntent(pendingIntent)
                         .setAutoCancel(true);

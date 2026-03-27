@@ -56,11 +56,6 @@ public class NotificationScheduler {
     public static void scheduleProximityNotification(Context context, Event event) {
         long triggerTime = event.getStartTime() - (10 * 60 * 1000); // 10 minutes before
 
-
-        if (triggerTime < System.currentTimeMillis()) {
-            return;
-        }
-
         if (triggerTime < System.currentTimeMillis()) {
             return;
         }
@@ -99,23 +94,25 @@ public class NotificationScheduler {
     public static void scheduleCatchUp(Context context, Event event) {
         long now = System.currentTimeMillis();
         long thirtyMinMark = event.getStartTime() - (30 * 60 * 1000);
-        long fiveMinMark = event.getStartTime() - (10 * 60 * 1000);
+        long tenMinMark = event.getStartTime() - (10 * 60 * 1000);
 
-        // 30-min window has passed but 5-min hasn't — fire 30-min notification now
-        if (now >= thirtyMinMark && now < fiveMinMark) {
-            fireImmediately(context, event, "30 minutes");
+        // If we are in the window between 30 and 10 mins before, fire the 30-min notification
+        if (now >= thirtyMinMark && now < tenMinMark) {
+            fireImmediately(context, event, NotificationReceiver.class, "30 minutes");
         }
-        // 10-min window has passed but lecture hasn't started — fire both missed notifications now
-        else if (now >= fiveMinMark && now < event.getStartTime()) {
-            fireImmediately(context, event, "10 minutes");
+        // If we are in the window 10 mins before start, fire the proximity/verification notification
+        else if (now >= tenMinMark && now < event.getStartTime()) {
+            fireImmediately(context, event, ProximityNotificationReceiver.class, null);
         }
     }
 
-    private static void fireImmediately(Context context, Event event, String minuteLabel) {
-        Intent intent = new Intent(context, NotificationReceiver.class);
+    private static void fireImmediately(Context context, Event event, Class<?> receiverClass, String minuteLabel) {
+        Intent intent = new Intent(context, receiverClass);
         intent.putExtra("title", event.title);
         intent.putExtra("location", event.getLocation());
-        intent.putExtra("label", minuteLabel);
+        if (minuteLabel != null) {
+            intent.putExtra("label", minuteLabel);
+        }
         context.sendBroadcast(intent);
     }
 }
