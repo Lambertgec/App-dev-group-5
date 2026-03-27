@@ -122,7 +122,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
      */
     public void isUserNearLocation(String buildingName, String roomName,
                                    double proximityMeters, Consumer<Boolean> callback) {
-        new ProximityChecker(requireContext())
+        Context context = getContext();
+        if (context == null) {
+            callback.accept(false);
+            return;
+        }
+        new ProximityChecker(context)
                 .check(buildingName, roomName, proximityMeters, annotationList, callback);
     }
 
@@ -143,8 +148,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        FusedLocationProviderClient fusedLocationClient =
-                LocationServices.getFusedLocationProviderClient(requireActivity());
         Button btnCenterTue = view.findViewById(R.id.btn_center_tue);
         btnFloorUp = view.findViewById(R.id.btn_floor_up);
         btnFloorDown = view.findViewById(R.id.btn_floor_down);
@@ -328,6 +331,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         repository.getAll(new kotlin.jvm.functions.Function1<List<Annotation>, kotlin.Unit>() {
             @Override
             public kotlin.Unit invoke(List<Annotation> annotations) {
+                if (!isAdded()) return kotlin.Unit.INSTANCE;
                 annotationList = annotations;
 
                 if (mapReady) {
@@ -359,10 +363,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
      * cleared after selection.
      */
     private void setupBuildingSearch() {
-        if (buildingSearch == null || buildingNames.isEmpty()) return;
+        if (!isAdded() || buildingSearch == null || buildingNames.isEmpty()) return;
+
+        Context context = getContext();
+        if (context == null) return;
 
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                requireContext(),
+                context,
                 android.R.layout.simple_dropdown_item_1line,
                 buildingNames
         );
@@ -418,6 +425,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
      * Updates the building markers displayed depending on the current floor level.
      */
     private void updateFloorLevel(String withoutBuilding, String withoutRoom) {
+        if (!isAdded()) return;
         if (currentFloor == -2) {
             tvFloorLevel.setText("Buildings");
         } else tvFloorLevel.setText("Level " + currentFloor);
