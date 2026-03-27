@@ -68,6 +68,9 @@
                 android:value="Monitoring and blocking distractful apps during educational lectures to improve student focus."/>
         </service>
 
+        <receiver android:name=".notifications.NotificationReceiver" android:exported="true" />
+        <receiver android:name=".notifications.ProximityNotificationReceiver" android:exported="true" />
+
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="${API_KEY}"/>
