@@ -7,14 +7,28 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
-import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
 
 import com.group5.gue.MainActivity;
 
-public class ProximityNotificationReceiver extends BroadcastReceiver {
+/**
+ * BroadcastReceiver that displays a proximity reminder notification when a lecture
+ * is 10 minutes away. Fired by {@link NotificationScheduler} and intended to prompt
+ * the user to be physically near their lecture venue so they can submit their
+ * attendance verification code.
+ * Tapping the notification opens {@link MainActivity} and navigates to the home tab.
+ */
+public class NotificationSoonReceiver extends BroadcastReceiver {
 
+    /**
+     * Handles the incoming broadcast by validating the location extra and, if
+     * present, delegating to {@link #showNotification(Context, String, String)}.
+     *
+     * @param context the Context in which the receiver is running
+     * @param intent  the Intent that triggered this receiver; must carry
+     *                {@code "title"} and a non-empty {@code "location"} extra
+     */
     @Override
     public void onReceive(Context context, Intent intent) {
         String title = intent.getStringExtra("title");
@@ -25,7 +39,17 @@ public class ProximityNotificationReceiver extends BroadcastReceiver {
         showNotification(context, title, location);
     }
 
-    private void showNotification(Context context, String title, String location) {
+    /**
+     * Constructs and posts a high-priority notification reminding the user that
+     * their lecture starts in 10 minutes and that they will soon be able to enter
+     * their attendance verification code.
+     *
+     * @param context  the Context used to build and post the notification
+     * @param title    the lecture/event title shown in the notification body
+     * @param location the room or building name (used for channel routing; the body
+     *                 text references the event title rather than the raw location)
+     */
+    public void showNotification(Context context, String title, String location) {
         NotificationManager manager =
                 (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
@@ -55,7 +79,8 @@ public class ProximityNotificationReceiver extends BroadcastReceiver {
                 new NotificationCompat.Builder(context, channelId)
                         .setSmallIcon(android.R.drawable.ic_dialog_info)
                         .setContentTitle("Lecture starts in 10 minutes!")
-                        .setContentText("You can input your verification code for " + title + " in 10 minutes.")
+                        .setContentText("You can input your verification code for " + title +
+                                " in 10 minutes.")
                         .setPriority(NotificationCompat.PRIORITY_HIGH)
                         .setContentIntent(pendingIntent)
                         .setAutoCancel(true);

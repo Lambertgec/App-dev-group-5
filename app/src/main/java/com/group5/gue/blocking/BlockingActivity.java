@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.WindowManager;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.group5.gue.MainActivity;
@@ -16,8 +17,7 @@ public class BlockingActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
-        // draw over other apps
+
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
                 | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
                 | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
@@ -26,7 +26,16 @@ public class BlockingActivity extends AppCompatActivity {
         binding = ActivityBlockingBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        // back button sends to GUE
+        // Intercept hardware back gesture and do nothing, keeping the user in this activity
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true)
+        {
+            @Override
+            public void handleOnBackPressed() {
+                // Intentionally empty — back navigation is disabled
+            }
+        });
+
+        // The UI back button is the only sanctioned exit, navigating to MainActivity
         binding.backButton.setOnClickListener(v -> {
             Intent intent = new Intent(this, MainActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -35,14 +44,8 @@ public class BlockingActivity extends AppCompatActivity {
         });
     }
 
-    // helps with retriggering the activity
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-    }
-
-    // disables back button
-    @Override
-    public void onBackPressed() {
     }
 }

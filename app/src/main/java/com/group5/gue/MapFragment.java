@@ -516,9 +516,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private void markLocation(String location) {
         if (annotationList == null) return;
 
-        String[] parts = location.split(" ", 2);
-
-        if (parts.length == 0) {
+        String[] parts = parseLocation(location);
+        if (parts == null) {
             Log.e("MAP_DEBUG", "Invalid location format: " + location);
             return;
         }
@@ -576,6 +575,26 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         if (marker != null) {
             marker.setTag(currentLocation.getId());
         }
+    }
+
+    /**
+     * Parses a full location string into a building name and an optional room number,
+     * trimming whitespace and returning {@code null} if the input is blank or null.
+     *
+     * @param location the full location string (e.g. {@code "Atlas 1.100"} or {@code "Atlas"})
+     * @return a string array where {@code [0]} is the building name and {@code [1]} is the
+     *         room number if present; or {@code null} if the input is null or blank
+     */
+    static String[] parseLocation(String location) {
+        if (location == null || location.trim().isEmpty()) return null;
+
+        String[] tokens = location.trim().split("\\s+");
+
+        if (tokens.length == 1) {
+            return new String[]{tokens[0]};
+        }
+
+        return new String[]{tokens[0], tokens[1]};
     }
 
     /* ------------------------------ Events Bar Functions ------------------------------------ */

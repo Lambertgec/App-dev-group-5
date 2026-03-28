@@ -60,6 +60,10 @@ android {
 }
 
 dependencies {
+    testImplementation("org.mockito:mockito-core:5.11.0")
+    testImplementation("org.robolectric:robolectric:4.12.1")
+    testImplementation("androidx.test:core:1.6.1")
+
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)

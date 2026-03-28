@@ -12,8 +12,24 @@ import androidx.core.app.NotificationCompat;
 
 import com.group5.gue.MainActivity;
 
+/**
+ * BroadcastReceiver that displays a reminder notification when a scheduled lecture
+ * is approaching. Fired by {@link NotificationScheduler} 30 minutes before a lecture
+ * starts, or immediately via {@code scheduleCatchUp} if the app is opened within
+ * that window. Tapping the notification opens {@link MainActivity} and navigates to the map tab.
+ */
 public class NotificationReceiver extends BroadcastReceiver {
 
+    /**
+     * Handles the incoming broadcast by constructing and posting a high-priority
+     * lecture reminder notification. Creates the {@code "lecture_channel"} notification channel.
+     * The notification is automatically dismissed when tapped.
+     *
+     * @param context the Context in which the receiver is running
+     * @param intent  the Intent that triggered this receiver; must carry
+     *                {@code "title"} and {@code "location"} extras, and optionally
+     *                a {@code "label"} extra to override the default time text
+     */
     @Override
     public void onReceive(Context context, Intent intent) {
 
@@ -44,6 +60,7 @@ public class NotificationReceiver extends BroadcastReceiver {
                 clickIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
+
         String label = intent.getStringExtra("label");
         String reminderText = label != null ? label : "30 minutes";
 
