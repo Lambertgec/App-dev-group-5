@@ -57,11 +57,15 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 dependencies {
     testImplementation("org.mockito:mockito-core:5.11.0")
-    testImplementation("org.robolectric:robolectric:4.12.1")
+    testImplementation("org.robolectric:robolectric:4.12.2")
     testImplementation("androidx.test:core:1.6.1")
 
     implementation(libs.appcompat)

@@ -26,8 +26,10 @@ import org.robolectric.RobolectricTestRunner;
 import androidx.test.core.app.ApplicationProvider;
 
 import java.util.List;
+import org.robolectric.annotation.Config;
 
 @RunWith(RobolectricTestRunner.class)
+@Config(sdk = 33)
 public class NotificationSchedulerTest {
 
     private Context context;

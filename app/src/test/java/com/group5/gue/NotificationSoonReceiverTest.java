@@ -18,7 +18,10 @@ import org.robolectric.RobolectricTestRunner;
 
 import com.group5.gue.notifications.NotificationSoonReceiver;
 
+import org.robolectric.annotation.Config;
+
 @RunWith(RobolectricTestRunner.class)
+@Config(sdk = 33)
 public class NotificationSoonReceiverTest {
 
     private Context context;
