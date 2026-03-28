@@ -39,22 +39,36 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * A simple {@link Fragment} subclass.
- * Use the {@link VerificationCodeFragment#newInstance} factory method to
- * create an instance of this fragment.
+ * Fragment responsible for the attendance verification process.
+ * <p>
+ * For Admins: Provides interface to generate a 6-digit verification code.
+ * <p>
+ * For Users: Provides an interface to enter the verification code, validates it,
+ * and starts app blocking if successful.
  */
 public class VerificationCodeFragment extends Fragment {
 
     private static final String PREFS_LECTURE = "lecture_prefs";
+    /** Key for storing the lecture end time in SharedPreferences. */
     public static final String KEY_LECTURE_END_TIME = "lecture_end_time";
+    /** Key for storing the attendance verification status in SharedPreferences. */
     public static final String KEY_CODE_VERIFIED = "attendance_verified";
+    /** Key for storing the lecture building in SharedPreferences. */
     public static final String KEY_LECTURE_BUILDING = "lecture_building";
+    /** Key for storing the lecture room in SharedPreferences. */
     public static final String KEY_LECTURE_ROOM = "lecture_room";
 
+    /**
+     * Required empty public constructor.
+     */
     public VerificationCodeFragment() {
-        // Required empty public constructor
     }
 
+    /**
+     * Factory method to create a new instance of this fragment.
+     *
+     * @return A new instance of VerificationCodeFragment.
+     */
     public static VerificationCodeFragment newInstance() {
         return new VerificationCodeFragment();
     }
@@ -108,6 +122,11 @@ public class VerificationCodeFragment extends Fragment {
         });
     }
 
+    /**
+     * Sets up the UI components for an admin user.
+     *
+     * @param v The root view of the fragment.
+     */
     private void setupAdminUI(View v) {
         final String[] location = {"location"};
         final long[] time = {System.currentTimeMillis()};
@@ -159,6 +178,11 @@ public class VerificationCodeFragment extends Fragment {
         });
     }
 
+    /**
+     * Sets up the UI components for a student/user.
+     *
+     * @param v The root view of the fragment.
+     */
     private void setupUserUI(View v) {
         EditText codeInput = v.findViewById(R.id.codeInput);
         Button verifyButton = v.findViewById(R.id.verifyButton);
@@ -231,6 +255,13 @@ public class VerificationCodeFragment extends Fragment {
         });
     }
 
+    /**
+     * Generates a 6-digit verification code based on a location and timestamp.
+     *
+     * @param location Name of building of lecture location
+     * @param time Lecture start epoch timestamp.
+     * @return An integer representing the generated code.
+     */
     public static int generateCode(String location, Long time) {
         int a = time.intValue();
         int b = (location != null) ? location.hashCode() : 0;
@@ -245,6 +276,12 @@ public class VerificationCodeFragment extends Fragment {
         }
     }
 
+    /**
+     * Formats the integer code into a 6-character string with leading zeros if necessary.
+     *
+     * @param code The integer code to format.
+     * @return A 6-character string representation of the code.
+     */
     private String formatCode(int code) {
         String codeString = String.valueOf(code);
         while (codeString.length() < 6) {

@@ -16,10 +16,16 @@ import com.group5.gue.data.PermissionHandler;
 import com.group5.gue.databinding.FragmentHomeBinding;
 import kotlin.Unit;
 
+/**
+ * Fragment representing the home screen of the application.
+ */
 public class HomeFragment extends Fragment {
 
     private FragmentHomeBinding binding;
 
+    /**
+     * Required empty public constructor.
+     */
     public HomeFragment() {
     }
 
@@ -68,6 +74,10 @@ public class HomeFragment extends Fragment {
         });
     }
 
+    /**
+     * Manages the logic for displaying the calendar fragment.
+     * Checks for calendar permissions and handles the "Show Calendar" button visibility.
+     */
     private void handleCalendarLogic() {
         PermissionHandler permissionHandler = new PermissionHandler(requireActivity());
 

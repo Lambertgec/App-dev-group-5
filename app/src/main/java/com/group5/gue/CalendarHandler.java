@@ -14,21 +14,41 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
+/**
+ * Utility class for interacting with the Android Calendar Provider.
+ * This class provides methods to retrieve calendars and events based on various criteria.
+ */
 public class CalendarHandler {
     private Cursor cursor;
 
     private String calendarName;
     private final ContentResolver contentResolver;
+    /** The name of the currently selected calendar. */
     public static String selectedCalendar = null;
 
+    /**
+     * Constructs a CalendarHandler using an Activity context.
+     *
+     * @param activity The activity from which to get the ContentResolver.
+     */
     public CalendarHandler(Activity activity) {
         this.contentResolver = activity.getContentResolver();
     }
 
+    /**
+     * Constructs a CalendarHandler using a ContentResolver.
+     *
+     * @param contentResolver The ContentResolver to use for queries.
+     */
     public CalendarHandler(ContentResolver contentResolver) {
         this.contentResolver = contentResolver;
     }
 
+    /**
+     * Retrieves a list of all available calendar display names.
+     *
+     * @return A list of strings containing calendar display names.
+     */
     public ArrayList<String> getCalendars(){
         Uri uri = CalendarContract.Calendars.CONTENT_URI;
 
@@ -45,10 +65,8 @@ public class CalendarHandler {
 
         ArrayList<String> calendarList = new ArrayList<>();
         while (cursor.moveToNext()) {
-            long calID = 0;
             String displayName = null;
 
-            calID = cursor.getLong(0);
             displayName = cursor.getString(1);
 
             calendarList.add(displayName);
@@ -57,6 +75,11 @@ public class CalendarHandler {
         return calendarList;
     }
 
+    /**
+     * Retrieves all events from the currently set calendar.
+     *
+     * @return A list of Event objects.
+     */
     public ArrayList<Event> getAllEvents() {
         String selection =
                 CalendarContract.Events.CALENDAR_DISPLAY_NAME + " = ?";
@@ -68,6 +91,11 @@ public class CalendarHandler {
     }
 
 
+    /**
+     * Retrieves events that are currently ongoing.
+     *
+     * @return A list of Event objects that started before now and end after now.
+     */
     public ArrayList<Event> getOngoingEvent() {
         String selection =
                 CalendarContract.Events.CALENDAR_DISPLAY_NAME + " = ? AND " +
@@ -82,6 +110,11 @@ public class CalendarHandler {
         return submitQuery(selection, selectionArgs);
     }
 
+    /**
+     * Retrieves events starting soon.
+     *
+     * @return A list of Event objects starting within the next hour.
+     */
     public ArrayList<Event> getStartingSoon() {
         String selection =
                 CalendarContract.Events.CALENDAR_DISPLAY_NAME + " = ? AND " +
@@ -99,6 +132,12 @@ public class CalendarHandler {
     }
 
 
+    /**
+     * Retrieves events for a specific day.
+     *
+     * @param startOfDay The start of the day in milliseconds.
+     * @return A list of Event objects occurring on that day.
+     */
     public ArrayList<Event> getDay(Long startOfDay) {
         String selection =
                 CalendarContract.Events.CALENDAR_DISPLAY_NAME + " = ? AND " +
@@ -113,6 +152,13 @@ public class CalendarHandler {
         return submitQuery(selection, selectionArgs);
     }
 
+    /**
+     * Helper method to execute a query against the Calendar Provider.
+     *
+     * @param query The selection string.
+     * @param args The selection arguments.
+     * @return A list of Event objects matching the query.
+     */
     private ArrayList<Event> submitQuery(String query, String[] args) {
 
         ArrayList<Event> eventList = new ArrayList<>();
@@ -147,6 +193,11 @@ public class CalendarHandler {
         return eventList;
     }
 
+    /**
+     * Retrieves all events scheduled to start in the future.
+     *
+     * @return A list of future Event objects.
+     */
     public ArrayList<Event> getFutureEvents() {
         String selection =
                 CalendarContract.Events.CALENDAR_DISPLAY_NAME + " = ? AND " +
@@ -160,9 +211,13 @@ public class CalendarHandler {
         return submitQuery(selection, selectionArgs);
     }
 
+    /**
+     * Sets the calendar to be used for future queries.
+     *
+     * @param calendarName The name of the calendar.
+     */
     void setCalendar(String calendarName) {
         this.calendarName = calendarName;
     }
 
 }
-
