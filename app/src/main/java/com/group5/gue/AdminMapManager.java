@@ -226,4 +226,27 @@ public class AdminMapManager {
             return null;
         });
     }
+
+    /**
+     * Resolves the level value for an annotation based on room input,
+     * explicit level input, and the current floor.
+     * <p>
+     * The resolution follows this priority:
+     * <ul>
+     *     <li>If no room is provided, {@code null} is returned.</li>
+     *     <li>If a level string is provided, it is returned.</li>
+     *     <li>Otherwise, the current floor is used (if valid).</li>
+     *     <li>If the current floor is {@code -2}, it is considered undefined and {@code null} is returned.</li>
+     * </ul>
+     *
+     * @param room         The room identifier; if empty, no level will be assigned.
+     * @param levelStr     The explicitly provided level string (may be empty).
+     * @param currentFloor The currently selected floor (-2 indicates no valid floor).
+     * @return The resolved level as a {@link String}, or {@code null} if no level applies.
+     */
+    static String resolveLevel(String room, String levelStr, int currentFloor) {
+        if (room.isEmpty()) return null;
+        if (!levelStr.isEmpty()) return levelStr;
+        return currentFloor == -2 ? null : String.valueOf(currentFloor);
+    }
 }
