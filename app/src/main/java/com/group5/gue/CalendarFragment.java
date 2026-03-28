@@ -15,6 +15,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.group5.gue.notifications.NotificationScheduler;
 
@@ -103,6 +104,8 @@ public class CalendarFragment extends Fragment {
         calendarHandler = new CalendarHandler(requireActivity());
         ArrayList<String> cals = calendarHandler.getCalendars();
 
+        cals.add(0, getString(R.string.choose_calendar));
+
         ArrayAdapter<String> adapter =
                 new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_dropdown_item,
                         cals);
@@ -134,6 +137,11 @@ public class CalendarFragment extends Fragment {
         if (selectedItem == null) return;
 
         String selectedCalendar = selectedItem.toString();
+
+        if (selectedCalendar.equals(getString(R.string.choose_calendar))) {
+            Toast.makeText(requireContext(), R.string.choose_calendar, Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         CalendarHandler.selectedCalendar = selectedCalendar;
         calendarHandler.setCalendar(selectedCalendar);
