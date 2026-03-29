@@ -64,12 +64,12 @@ public class CalendarHandler {
         }
 
         ArrayList<String> calendarList = new ArrayList<>();
-        while (cursor.moveToNext()) {
-            String displayName = null;
-
-            displayName = cursor.getString(1);
-
-            calendarList.add(displayName);
+        if (cursor != null) {
+            while (cursor.moveToNext()) {
+                String displayName = cursor.getString(1);
+                calendarList.add(displayName);
+            }
+            cursor.close();
         }
 
         return calendarList;
@@ -176,15 +176,18 @@ public class CalendarHandler {
             try {
                 cursor = contentResolver.query(uri, EVENT_PROJECTION, query, args, null);
 
-                while (cursor.moveToNext()) {
-                    Event event = new Event();
+                if (cursor != null) {
+                    while (cursor.moveToNext()) {
+                        Event event = new Event();
 
-                    event.title = cursor.getString(1);
-                    event.startTime = cursor.getLong(2);
-                    event.endTime = cursor.getLong(3);
-                    event.location = cursor.getString(4);
+                        event.title = cursor.getString(1);
+                        event.startTime = cursor.getLong(2);
+                        event.endTime = cursor.getLong(3);
+                        event.location = cursor.getString(4);
 
-                    eventList.add(event);
+                        eventList.add(event);
+                    }
+                    cursor.close();
                 }
             } catch (Exception e) {
                 Log.d("calendar", Log.getStackTraceString(e));
