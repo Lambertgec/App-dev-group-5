@@ -26,6 +26,7 @@ navigationFragment = "2.6.0"
 navigationUi = "2.6.0"
 workManager = "2.9.0"
 glide = "4.16.0"
+sonar = "5.1.0.4882"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -73,3 +74,4 @@ glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "gl
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlinVersion" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinVersion" }
+sonar = { id = "org.sonarqube", version.ref = "sonar" }

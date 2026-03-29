@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.sonar)
     id("jacoco")
 }
 
@@ -54,18 +55,23 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     testOptions {
-        unitTests.isIncludeAndroidResources = true
+        unitTests {
+            isIncludeAndroidResources = true
+            all {
+                it.jvmArgs("-noverify")
+            }
+        }
     }
 }
 
 dependencies {
     testImplementation("org.mockito:mockito-core:5.11.0")
-    testImplementation("org.robolectric:robolectric:4.12.2")
+    testImplementation("org.robolectric:robolectric:4.13")
     testImplementation("androidx.test:core:1.6.1")
 
     implementation(libs.appcompat)
@@ -116,7 +122,19 @@ dependencies {
 }
 
 jacoco {
-    toolVersion = "0.8.14"
+    toolVersion = "0.8.11"
+}
+
+sonar {
+    properties {
+        property("sonar.sources", "src/main/java,src/main/kotlin")
+
+        property("sonar.tests", "src/test/java,src/androidTest/java")
+
+        property("sonar.coverage.jacoco.xmlReportPaths", "${layout.buildDirectory.get()}/reports/jacoco/jacocoTestReport/jacocoTestReport.xml")
+
+        //property("sonar.exclusions", "**/R.class, **/BuildConfig.*, **/Manifest*.*")
+    }
 }
 
 // Create a custom JaCoCo report task
