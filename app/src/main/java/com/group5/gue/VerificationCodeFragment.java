@@ -48,6 +48,7 @@ import java.util.Locale;
  */
 public class VerificationCodeFragment extends Fragment {
 
+    /** Name of the SharedPreferences file used for storing lecture-related data. */
     private static final String PREFS_LECTURE = "lecture_prefs";
     /** Key for storing the lecture end time in SharedPreferences. */
     public static final String KEY_LECTURE_END_TIME = "lecture_end_time";
@@ -69,23 +70,22 @@ public class VerificationCodeFragment extends Fragment {
      *
      * @return A new instance of VerificationCodeFragment.
      */
-    public static VerificationCodeFragment newInstance() {
-        return new VerificationCodeFragment();
-    }
-
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_verification_code, container, false);
 
+        // Retrieve current user from the repository to check permissions
         User currentUser = UserRepository.Companion.getInstance().getCachedUser();
         if (currentUser == null) {
             return v;
         }
 
+        // Locate role-specific layouts
         LinearLayout adminLayout = v.findViewById(R.id.adminLayout);
         LinearLayout userLayout = v.findViewById(R.id.userLayout);
 
+        // Toggle visibility based on admin status
         if (currentUser.isAdmin()) {
             adminLayout.setVisibility(View.VISIBLE);
             userLayout.setVisibility(View.GONE);
@@ -124,29 +124,32 @@ public class VerificationCodeFragment extends Fragment {
 
     /**
      * Sets up the UI components for an admin user.
-     *
-     * @param v The root view of the fragment.
      */
     private void setupAdminUI(View v) {
         final String[] location = {"location"};
         final long[] time = {System.currentTimeMillis()};
 
+        // UI trigger for selecting a building location
         TextView setLocation = v.findViewById(R.id.setLocation);
         setLocation.setOnClickListener(v1 -> {
+            // Fetch all annotations (buildings) from the repository
             AnnotationRepository.Companion.getInstance().getAll(annotations -> {
                 List<String> locationNames = new ArrayList<>();
                 for (Annotation a : annotations) {
                     if (a.getBuilding() != null) locationNames.add(a.getBuilding());
                 }
                 
+                // Show toast if no locations are available for selection
                 if (locationNames.isEmpty()) {
                     Toast.makeText(getContext(), "No locations found in repository", Toast.LENGTH_SHORT).show();
                     return kotlin.Unit.INSTANCE;
                 }
 
+                // Prepare and show a selection dialog
                 String[] locationsArray = locationNames.toArray(new String[0]);
                 AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
                 builder.setItems(locationsArray, (dialog, choice) -> {
+                    // Update state and UI with chosen location
                     location[0] = locationsArray[choice];
                     setLocation.setText(location[0]);
                 });
@@ -155,17 +158,23 @@ public class VerificationCodeFragment extends Fragment {
             });
         });
 
+        // Trigger for code generation and display
         TextView codeDisplay = v.findViewById(R.id.codeDisplay);
         codeDisplay.setText("Click to generate attendance code");
         codeDisplay.setOnClickListener(v1 -> codeDisplay.setText(formatCode(generateCode(location[0], time[0]))));
 
+        // UI trigger for selecting the lecture start time
         TextView setTime = v.findViewById(R.id.setTime);
         setTime.setOnClickListener(v1 -> {
             Calendar mcurrentTime = Calendar.getInstance();
             int hour = mcurrentTime.get(Calendar.HOUR_OF_DAY);
             int minute = mcurrentTime.get(Calendar.MINUTE);
+            // Open standard Android TimePicker
             TimePickerDialog mTimePicker = new TimePickerDialog(requireContext(), (timePicker, selectedHour, selectedMinute) -> {
+                // Display formatted time back to the user
                 setTime.setText(String.format(Locale.getDefault(), "%02d:%02d", selectedHour, selectedMinute));
+                
+                // Construct a timestamp for the selected time today
                 Calendar calendar = Calendar.getInstance();
                 calendar.set(Calendar.HOUR_OF_DAY, selectedHour);
                 calendar.set(Calendar.MINUTE, selectedMinute);
@@ -180,29 +189,32 @@ public class VerificationCodeFragment extends Fragment {
 
     /**
      * Sets up the UI components for a student/user.
-     *
-     * @param v The root view of the fragment.
      */
     private void setupUserUI(View v) {
         EditText codeInput = v.findViewById(R.id.codeInput);
         Button verifyButton = v.findViewById(R.id.verifyButton);
 
+        // Verification button click logic
         verifyButton.setOnClickListener(v1 -> {
             final String enteredCode = codeInput.getText().toString();
 
+            // Initialize calendar handler to check for ongoing lectures
             CalendarHandler calendarHandler = new CalendarHandler(requireActivity().getContentResolver());
             if (CalendarHandler.selectedCalendar != null) {
                 calendarHandler.setCalendar(CalendarHandler.selectedCalendar);
             }
             
+            // Fetch events happening right now
             ArrayList<Event> ongoingEvents = calendarHandler.getOngoingEvent();
             if (ongoingEvents.isEmpty()) {
+                // If no event is scheduled, verification cannot proceed
                 Toast.makeText(getContext(), "No ongoing lecture found in calendar!", Toast.LENGTH_SHORT).show();
                 return;
             }
 
             final Event currentEvent = ongoingEvents.get(0);
-            
+
+            // Ensure location permissions are granted for proximity check
             if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 new PermissionHandler(requireActivity()).requestPermission(Manifest.permission.ACCESS_FINE_LOCATION);
                 return;
@@ -234,20 +246,24 @@ public class VerificationCodeFragment extends Fragment {
                             .putString(KEY_LECTURE_ROOM, room)
                             .apply();
 
+                        // Initialize app blocking logic
                         AppBlockingManager blockingManager = new AppBlockingManager(requireContext());
                         requireContext().getSharedPreferences(AppBlockingManager.PREFS_NAME, Context.MODE_PRIVATE)
                                 .edit()
                                 .putBoolean(AppBlockingManager.KEY_BLOCKING_ENABLED, true)
                                 .apply();
                         
+                        // Ensure necessary permissions and start the blocking service
                         PermissionHandler permissionHandler = new PermissionHandler(requireActivity());
                         permissionHandler.requestAppBlocking();
                         blockingManager.startBlockingService();
 
+                        // Start background work for attendance checks
                         OneTimeWorkRequest workRequest = new OneTimeWorkRequest.Builder(AttendanceCheckWorker.class).build();
                         WorkManager.getInstance(requireContext()).enqueue(workRequest);
 
                     } else {
+                        // Notify user of incorrect code
                         Toast.makeText(getContext(), "Invalid Code!", Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -263,12 +279,15 @@ public class VerificationCodeFragment extends Fragment {
      * @return An integer representing the generated code.
      */
     public static int generateCode(String location, Long time) {
+        // Use part of the timestamp and the hash of the location string
         int a = time.intValue();
         int b = (location != null) ? location.hashCode() : 0;
 
+        // Multiply and take modulo to get a 6-digit range
         int res = (a * b);
         res = res % 1000000;
 
+        // Ensure result is positive
         if (res > 0) {
             return res;
         } else {
@@ -284,6 +303,7 @@ public class VerificationCodeFragment extends Fragment {
      */
     private String formatCode(int code) {
         String codeString = String.valueOf(code);
+        // Prepend zeros until length is exactly 6
         while (codeString.length() < 6) {
             codeString = "0" + codeString;
         }
