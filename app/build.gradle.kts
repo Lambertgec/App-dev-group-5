@@ -63,7 +63,8 @@ android {
         unitTests {
             isIncludeAndroidResources = true
             all {
-                it.jvmArgs("-noverify")
+                // Required on JDK 25 until Byte Buddy versions in transitive test deps fully support class file version 69.
+                it.jvmArgs("-noverify", "-Dnet.bytebuddy.experimental=true")
                 it.extensions.configure(org.gradle.testing.jacoco.plugins.JacocoTaskExtension::class) {
                     isIncludeNoLocationClasses = true
                     excludes = listOf(
@@ -85,7 +86,7 @@ dependencies {
     testImplementation("org.robolectric:robolectric:4.13")
     testImplementation("androidx.test:core:1.6.1")
     debugImplementation("androidx.fragment:fragment-testing:1.6.1")
-
+    
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)
