@@ -66,10 +66,13 @@ public class MainActivity extends AppCompatActivity {
             new PeriodicWorkRequest.Builder(AttendanceCheckWorker.class, 15, TimeUnit.MINUTES)
                     .build();
 
+    // View binding instance for accessing layout components.
     ActivityMainBinding binding;
 
     /**
-     * Initializes the activity, sets up the UI, handles permissions, and sarts background work.
+     * Initializes the activity, sets up the UI, handles permissions, and starts background work.
+     * 
+     * @param savedInstanceState State bundle for restoration.
      */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        // Prepare notifications and permissions
         createNotificationChannels();
         // Request necessary permissions
         requestPermissions();
@@ -102,8 +106,10 @@ public class MainActivity extends AppCompatActivity {
                 attendanceWork
         );
 
+        // Load the default landing fragment
         switchFragmant(new HomeFragment());
 
+        // Handle edge-to-edge system bar insets
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main),
                 (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -125,8 +131,10 @@ public class MainActivity extends AppCompatActivity {
            return true;
         });
 
+        // Trigger notification scheduling logic
         scheduleNotifications();
 
+        // Handle possible deep link intents
         handleIntent(getIntent());
     }
 
@@ -157,6 +165,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Requests runtime permissions for Calendar and Notifications.
+     */
     private void requestPermissions() {
         ArrayList<String> permissions = new ArrayList<>();
         permissions.add(Manifest.permission.READ_CALENDAR);
@@ -176,6 +187,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Iterates through future calendar events and schedules relevant local notifications.
+     */
     private void scheduleNotifications() {
         if (CalendarHandler.selectedCalendar != null && 
             ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED) {
@@ -193,12 +207,18 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Callback for new intents, used for handling deep links while the activity is running.
+     */
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         handleIntent(intent);
     }
 
+    /**
+     * Parses the incoming intent for navigation markers.
+     */
     private void handleIntent(Intent intent) {
         if (intent != null) {
             String openTab = intent.getStringExtra("open_tab");
@@ -249,6 +269,7 @@ public class MainActivity extends AppCompatActivity {
                // On successful logout, return to the Launcher screen
                Intent intent = new Intent(MainActivity.this, LauncherActivity.class);
                startActivity(intent);
+               finish(); // Close main activity on logout
                return Unit.INSTANCE;
             });
             return true;

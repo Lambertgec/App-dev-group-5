@@ -17,11 +17,20 @@ import com.group5.gue.data.model.User;
 import com.group5.gue.data.Result;
 import com.group5.gue.ui.login.launcher.LauncherActivity;
 
+/**
+ * Activity for viewing and managing the user's profile.
+ * Allows users to view their score, change their username, and delete their account.
+ */
 public class ProfileActivity extends AppCompatActivity {
 
+    // Repository for user-related data operations.
     private UserRepository userRepository;
+    // The currently logged-in user's data.
     private User currentUser;
 
+    /**
+     * Initializes the profile activity and its components.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -29,12 +38,14 @@ public class ProfileActivity extends AppCompatActivity {
         
         userRepository = UserRepository.Companion.getInstance();
         
+        // Host the profile fragment if not already present
         if (savedInstanceState == null) {
             getSupportFragmentManager()
                     .beginTransaction()
                     .replace(R.id.user, new ProfileFragment()).commit();
         }
         
+        // Setup navigation back button
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
@@ -44,6 +55,9 @@ public class ProfileActivity extends AppCompatActivity {
         setupButtons();
     }
 
+    /**
+     * Retrieves the user data from the local cache.
+     */
     private void loadProfileData() {
         User cachedUser = userRepository.getCachedUser();
         if (cachedUser != null) {
@@ -51,6 +65,11 @@ public class ProfileActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Updates the UI widgets with the provided user information.
+     * 
+     * @param user The user object containing the data to display.
+     */
     private void displayUserProfile(User user) {
         this.currentUser = user;
         
@@ -73,6 +92,9 @@ public class ProfileActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Configures the click listeners for action buttons.
+     */
     private void setupButtons() {
         Button changeUsernameButton = findViewById(R.id.changeUsernameButton);
         if (changeUsernameButton != null) {
@@ -85,6 +107,9 @@ public class ProfileActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Displays a dialog to input a new username.
+     */
     private void showChangeUsernameDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Change Username");
@@ -105,6 +130,9 @@ public class ProfileActivity extends AppCompatActivity {
         builder.show();
     }
 
+    /**
+     * Displays a confirmation dialog before deleting the user account.
+     */
     private void showDeleteAccountDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Delete Account");
@@ -112,7 +140,7 @@ public class ProfileActivity extends AppCompatActivity {
 
         builder.setPositiveButton("Delete", (dialog, which) -> {
             if (currentUser != null) {
-                
+                // Request account deletion from the repository
                 userRepository.deleteAccount(result -> {
                     runOnUiThread(() -> {
                         if (result instanceof Result.Success) {
@@ -121,6 +149,7 @@ public class ProfileActivity extends AppCompatActivity {
                                 "Account deleted successfully",
                                 Toast.LENGTH_SHORT
                             ).show();
+                            // Redirect to landing page on success
                             startActivity(new Intent(ProfileActivity.this, LauncherActivity.class));
                             finishAffinity();
                         } else if (result instanceof Result.Error) {
@@ -141,6 +170,11 @@ public class ProfileActivity extends AppCompatActivity {
         builder.show();
     }
 
+    /**
+     * Sends the updated username to the repository and updates local state.
+     * 
+     * @param newUsername The new display name for the user.
+     */
     private void updateUsername(String newUsername) {
         if (currentUser == null) return;
         
@@ -173,6 +207,9 @@ public class ProfileActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Fragment placeholder for profile settings.
+     */
     public static class ProfileFragment extends PreferenceFragmentCompat {
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {

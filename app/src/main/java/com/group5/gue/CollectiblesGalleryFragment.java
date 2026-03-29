@@ -28,11 +28,14 @@ import java.util.Set;
 import kotlin.Unit;
 
 /**
- * Displays collectibles in a grid view and shows details for the selected item.
+ * Fragment that displays a gallery of collectibles in a grid layout.
+ * Users can view their owned items, see details for each item, and admins can upload new ones.
  */
 public class CollectiblesGalleryFragment extends Fragment {
 
+    // Repository for managing collectible data fetching and deletion.
     private final CollectibleRepository repository = CollectibleRepository.Companion.getInstance();
+    // Repository for accessing user profile and score information.
     private final UserRepository userRepository = UserRepository.Companion.getInstance();
 
     private User currentUser;
@@ -44,20 +47,27 @@ public class CollectiblesGalleryFragment extends Fragment {
     private TextView detailNameView;
     private TextView detailCostView;
     private TextView detailDescriptionView;
+    // Tracks which collectibles the user has already acquired.
     private Set<Integer> ownedCollectibleIds = new HashSet<>();
-    
 
+
+    /**
+     * Initializes the fragment with the gallery layout.
+     */
     public CollectiblesGalleryFragment() {
         super(R.layout.fragment_collectibles_gallery);
     }
 
+    /**
+     * Sets up UI components, adapters, and result listeners for the gallery view.
+     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
         currentUser = userRepository.getCachedUser();
         adapter = new CollectibleGridAdapter(this::showDetails);
-        
+
 
         progressBar = view.findViewById(R.id.collectiblesProgressBar);
         emptyView = view.findViewById(R.id.collectiblesEmptyView);
@@ -67,13 +77,16 @@ public class CollectiblesGalleryFragment extends Fragment {
         detailCostView = view.findViewById(R.id.collectibleDetailCost);
         detailDescriptionView = view.findViewById(R.id.collectibleDetailDescription);
 
+        // Configure RecyclerView with a 2-column grid layout
         RecyclerView recyclerView = view.findViewById(R.id.collectiblesRecyclerView);
         recyclerView.setLayoutManager(new GridLayoutManager(requireContext(), 2));
         recyclerView.setAdapter(adapter);
 
+        // Navigation button to return to the previous screen
         Button backButton = view.findViewById(R.id.backHomeButton);
         backButton.setOnClickListener(v -> getParentFragmentManager().popBackStack());
 
+        // Admin-only upload button configuration
         Button uploadButton = view.findViewById(R.id.openUploadButton);
         boolean isAdmin = currentUser != null && currentUser.isAdmin();
         uploadButton.setVisibility(isAdmin ? View.VISIBLE : View.GONE);
@@ -99,6 +112,9 @@ public class CollectiblesGalleryFragment extends Fragment {
         loadCollectibles(false);
     }
 
+    /**
+     * Updates the UI to display the current user's total score.
+     */
     private void refreshUserScore() {
         int userScore = currentUser != null ? currentUser.getScore() : 0;
         userScoreView.setText(getString(R.string.collectibles_user_score_value, userScore));
@@ -124,6 +140,7 @@ public class CollectiblesGalleryFragment extends Fragment {
                 return Unit.INSTANCE;
             }
 
+            // Sync with owned items to update the UI visuals (locked vs unlocked)
             userRepository.getOwnedCollectibleIds(userId, ownedIds -> {
                 applyCollectiblesState(collectibles, ownedIds, showUploadToast);
                 return Unit.INSTANCE;
@@ -132,6 +149,9 @@ public class CollectiblesGalleryFragment extends Fragment {
         });
     }
 
+    /**
+     * Sorts and displays the collectible items in the adapter.
+     */
     private void applyCollectiblesState(
         List<Collectible> collectibles,
         Set<Integer> ownedIds,
@@ -141,6 +161,7 @@ public class CollectiblesGalleryFragment extends Fragment {
 
         ownedCollectibleIds = new HashSet<>(ownedIds);
         List<Collectible> sortedCollectibles = new ArrayList<>(collectibles);
+        // Sort items by ID in descending order to show newest additions first
         sortedCollectibles.sort(Comparator.comparingLong(Collectible::getId).reversed());
 
         adapter.setOwnedCollectibleIds(ownedCollectibleIds);
@@ -174,6 +195,11 @@ public class CollectiblesGalleryFragment extends Fragment {
         }
     }
 
+    /**
+     * Configures the delete button within the detail view (restricted to admins).
+     * 
+     * @param collectible The collectible associated with the delete action.
+     */
     private void setupDeleteButton(Collectible collectible) {
         Button deletebutton = detailCard.findViewById(R.id.collectibleDetailDeleteButton);
         if (currentUser != null && currentUser.isAdmin()) {

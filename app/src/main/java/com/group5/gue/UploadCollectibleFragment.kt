@@ -23,18 +23,24 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * Collectible upload screen.
+ * Fragment responsible for uploading new collectibles to the system.
+ * This functionality is restricted to administrator users only.
  */
 class UploadCollectibleFragment : Fragment(R.layout.fragment_upload_collectible) {
 
     companion object {
+        // Result key used to notify parent fragments that a collectible was successfully uploaded.
         const val RESULT_KEY = "collectible_uploaded"
     }
 
+    // Repository for collectible data operations.
     private val repository = CollectibleRepository.getInstance()
+    // Repository for user data and authentication status.
     private val userRepository = UserRepository.getInstance()
 
+    // Temporarily holds the raw bytes of the selected image.
     private var selectedImageBytes: ByteArray? = null
+    // Stores the file extension (e.g., "png", "jpg") of the selected image.
     private var selectedImageExtension: String? = null
 
     private lateinit var previewImageView: ImageView
@@ -46,6 +52,10 @@ class UploadCollectibleFragment : Fragment(R.layout.fragment_upload_collectible)
     private lateinit var publishButton: Button
     private lateinit var chooseImageButton: Button
 
+    /**
+     * Activity Result Launcher for picking an image from the device's storage.
+     * Updates the UI and internal byte buffers upon selection.
+     */
     private val imagePicker = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri == null) {
             return@registerForActivityResult
@@ -74,6 +84,10 @@ class UploadCollectibleFragment : Fragment(R.layout.fragment_upload_collectible)
         }
     }
 
+    /**
+     * Initializes the UI components and sets up click listeners.
+     * Enforces admin-only access check.
+     */
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -108,6 +122,9 @@ class UploadCollectibleFragment : Fragment(R.layout.fragment_upload_collectible)
         }
     }
 
+    /**
+     * Validates input fields and submits the collectible data and image to the repository.
+     */
     private fun submitCollectible() {
         if (userRepository.getCachedUser()?.isAdmin != true) {
             Toast.makeText(requireContext(), "Only admins can upload collectibles", Toast.LENGTH_SHORT).show()
@@ -180,6 +197,9 @@ class UploadCollectibleFragment : Fragment(R.layout.fragment_upload_collectible)
     }
 
 
+    /**
+     * Resolves the file extension from the given URI using MimeTypeMap or filename parsing.
+     */
     private fun resolveFileExtension(uri: Uri): String {
         val mimeType = requireContext().contentResolver.getType(uri)
         return MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType)
@@ -190,6 +210,9 @@ class UploadCollectibleFragment : Fragment(R.layout.fragment_upload_collectible)
             ?: "jpg"
     }
 
+    /**
+     * Toggles the UI state between 'uploading' and 'idle' to prevent multiple submissions.
+     */
     private fun setUploading(isUploading: Boolean) {
         progressBar.isVisible = isUploading
         publishButton.isEnabled = !isUploading

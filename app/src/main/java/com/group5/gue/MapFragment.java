@@ -39,34 +39,51 @@ import java.util.function.Consumer;
  */
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
+    /** Request code for location permission. */
     private static final int LOCATION_PERMISSION_REQUEST = 1;
+    /** Default center coordinates for the TU/e campus. */
     private static final com.google.android.gms.maps.model.LatLng TUE_CAMPUS =
             new com.google.android.gms.maps.model.LatLng(51.448, 5.489);
 
     // Managers
     private MarkerManager markerManager;
+    // Manages the display of current and upcoming events at the top of the map.
     private EventBarManager eventBarManager;
+    // Handles administrative tasks such as adding or deleting map markers.
     private AdminMapManager adminMapManager;
+    // Manages the search functionality for buildings on campus.
     private BuildingSearchManager buildingSearchManager;
 
     // Infrastructure
     private GoogleMap mMap;
+    // Repository for accessing map annotation data from the database.
     private final AnnotationRepository repository = AnnotationRepository.Companion.getInstance();
+    // Repository for accessing user profile and role information.
     private final UserRepository userRepository = UserRepository.Companion.getInstance();
+    // The currently logged-in user.
     private User user;
 
+    /**
+     * Initializes the fragment and retrieves the current user session.
+     */
     public MapFragment() {
         user = userRepository.getCachedUser();
     }
 
     /* ------------------------------------------------------------------ lifecycle */
 
+    /**
+     * Inflates the layout for the map fragment.
+     */
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_map, container, false);
     }
 
+    /**
+     * Wires together the various map managers and initializes UI components.
+     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -123,34 +140,45 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         eventBarManager.refresh(requireContext());
     }
 
+    /**
+     * Configures map settings and styling once the Google Map instance is ready.
+     */
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         mMap = googleMap;
         mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
 
+        // Apply custom raw map styling (e.g., dark mode or simplified geometry)
         try {
             mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(getContext(), R.raw.map_style));
         } catch (Resources.NotFoundException e) {
             e.printStackTrace();
         }
 
+        // Add padding to avoid overlapping the search bar and event bar
         mMap.setPadding(0, 250, 0, 0);
 
+        // Enable Blue Dot location if permissions are granted
         if (ContextCompat.checkSelfPermission(requireContext(),
                 Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             mMap.setMyLocationEnabled(true);
         }
 
+        // Set initial camera position
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(TUE_CAMPUS, 16f));
 
         // Set custom info window (shows delete icon for admins)
         mMap.setInfoWindowAdapter(buildInfoWindowAdapter());
 
+        // Connect managers to the live map instance
         markerManager.attachMap(mMap);
         adminMapManager.attachListeners(mMap);
         buildingSearchManager.attachMap(mMap, markerManager.getActiveMarkers());
     }
 
+    /**
+     * Handles the user response to the location permission request.
+     */
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String[] permissions,
@@ -183,6 +211,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                         markerManager.getAnnotationList(), callback);
     }
 
+    /**
+     * Fetches the latest annotation data and distributes it to the relevant managers.
+     */
     private void fetchAnnotations() {
         repository.getAll(annotations -> {
             if (!isAdded()) return kotlin.Unit.INSTANCE;
@@ -192,6 +223,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         });
     }
 
+    /**
+     * Constructs a CalendarHandler instance for the current user's schedule.
+     */
     private CalendarHandler buildCalendarHandler() {
         try {
             CalendarHandler handler = new CalendarHandler(requireActivity());
@@ -205,6 +239,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
     }
 
+    /**
+     * Creates a custom adapter for displaying marker information windows.
+     */
     private GoogleMap.InfoWindowAdapter buildInfoWindowAdapter() {
         return new GoogleMap.InfoWindowAdapter() {
             @Nullable
@@ -218,6 +255,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 ((TextView) window.findViewById(R.id.info_window_title)).setText(marker.getTitle());
                 ((TextView) window.findViewById(R.id.info_window_snippet)).setText(marker.getSnippet());
                 ImageView deleteIcon = window.findViewById(R.id.delete);
+                // Only show the delete option if the user is an administrator
                 deleteIcon.setVisibility(adminMapManager.isAdmin() ? View.VISIBLE : View.GONE);
                 return window;
             }

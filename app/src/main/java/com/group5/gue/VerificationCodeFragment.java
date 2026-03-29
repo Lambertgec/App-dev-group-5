@@ -68,6 +68,10 @@ public class VerificationCodeFragment extends Fragment {
     /**
      * Factory method to create a new instance of this fragment.
      *
+     * @param inflater LayoutInflater to inflate views.
+     * @param container Parent view group.
+     * @param savedInstanceState Bundle with saved space.
+     *
      * @return A new instance of VerificationCodeFragment.
      */
     @Override
@@ -99,16 +103,25 @@ public class VerificationCodeFragment extends Fragment {
         return v;
     }
 
+    /**
+     * Initializes views after the view has been created.
+     *
+     * @param view The View returned by onCreateView.
+     * @param savedInstanceState Bundle with saved data.
+     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        // Initialize view binding and repository
         FragmentVerificationCodeBinding binding = FragmentVerificationCodeBinding.bind(view);
         FriendsRepository repository = FriendsRepository.getInstance();
 
+        // Check if the user is an admin
         repository.isAdmin(isAdmin -> {
             if (binding == null) return kotlin.Unit.INSTANCE;
 
+            // Separate views based on current user's role
             if (isAdmin) {
                 binding.adminLayout.setVisibility(View.VISIBLE);
                 binding.userLayout.setVisibility(View.GONE);

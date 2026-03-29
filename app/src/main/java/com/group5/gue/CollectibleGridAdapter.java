@@ -29,24 +29,46 @@ public class CollectibleGridAdapter extends RecyclerView.Adapter<CollectibleGrid
      * Callback for when a collectible is clicked
      */
     public interface OnCollectibleClickListener {
+        /**
+         * Called when a collectible item has been clicked.
+         * 
+         * @param collectible The collectible object associated with the clicked item.
+         */
         void onCollectibleClick(Collectible collectible);
     }
 
+    // List of all collectible items to be displayed in the grid.
     private final List<Collectible> items = new ArrayList<>();
+    // Set of IDs for collectibles that the current user has already acquired.
     private final Set<Integer> ownedCollectibleIds = new HashSet<>();
+    // Listener for handling click events on individual grid items.
     private final OnCollectibleClickListener onCollectibleClickListener;
 
+    /**
+     * Constructs a new adapter with a specified click listener.
+     * 
+     * @param onCollectibleClickListener The listener to handle item clicks.
+     */
     public CollectibleGridAdapter(OnCollectibleClickListener onCollectibleClickListener) {
         this.onCollectibleClickListener = onCollectibleClickListener;
     }
 
-    // Refreshing UI when new collectible is added
+    /**
+     * Replaces the current items in the adapter with a new list and refreshes the UI.
+     * 
+     * @param collectibles The new list of collectibles to display.
+     */
     public void submitItems(List<Collectible> collectibles) {
         items.clear();
         items.addAll(collectibles);
         notifyDataSetChanged();
     }
 
+    /**
+     * Updates the set of owned collectibles and refreshes the UI to show unlocked items.
+     * 
+     * @param ownedIds The set of IDs belonging to the user's collection.
+     */
     public void setOwnedCollectibleIds(Set<Integer> ownedIds) {
         ownedCollectibleIds.clear();
         ownedCollectibleIds.addAll(ownedIds);
@@ -54,7 +76,9 @@ public class CollectibleGridAdapter extends RecyclerView.Adapter<CollectibleGrid
     }
 
 
-    // Creates blank tile
+    /**
+     * Inflates the layout for a single collectible grid item.
+     */
     @NonNull
     @Override
     public CollectibleViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -63,32 +87,50 @@ public class CollectibleGridAdapter extends RecyclerView.Adapter<CollectibleGrid
         return new CollectibleViewHolder(view);
     }
 
-    // Binds the tile to a listener and collectible data
+    /**
+     * Binds the collectible data at a specific position to its ViewHolder.
+     * 
+     * @param holder The ViewHolder to update.
+     * @param position The index of the item in the list.
+     */
     @Override
     public void onBindViewHolder(@NonNull CollectibleViewHolder holder, int position) {
         Collectible collectible = items.get(position);
+        // Determine if this item should be shown as 'unlocked'
         boolean isOwned = ownedCollectibleIds.contains(collectible.getId());
         holder.bind(collectible, isOwned, onCollectibleClickListener);
     }
 
+    /**
+     * Returns the total count of collectibles in the adapter.
+     */
     @Override
     public int getItemCount() {
         return items.size();
     }
 
-    // The tile view holder
+    /**
+     * ViewHolder class that holds the views for a single collectible grid tile.
+     */
     static class CollectibleViewHolder extends RecyclerView.ViewHolder {
         private final ImageView imageView;
         private final TextView nameView;
         private final TextView costView;
 
-        CollectibleViewHolder(@NonNull View itemView) {
+        public CollectibleViewHolder(@NonNull View itemView) {
             super(itemView);
             imageView = itemView.findViewById(R.id.collectibleImageView);
             nameView = itemView.findViewById(R.id.collectibleNameView);
             costView = itemView.findViewById(R.id.collectibleCostView);
         }
 
+        /**
+         * Populates the views with collectible data and configures the appearance based on ownership.
+         * 
+         * @param collectible The collectible data.
+         * @param isOwned Whether the user owns this collectible.
+         * @param listener Callback for click events.
+         */
         void bind(Collectible collectible, boolean isOwned, OnCollectibleClickListener listener) {
             nameView.setText(collectible.getName());
             costView.setText(itemView.getContext().getString(R.string.collectible_cost, collectible.getScore()));

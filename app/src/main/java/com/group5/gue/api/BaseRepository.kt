@@ -6,12 +6,26 @@ import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 
+/**
+ * Interface defining the base structure for all data repositories.
+ * Provides a common foundation for interacting with Supabase tables.
+ */
 interface BaseRepository {
+    // The name of the table in Supabase this repository manages.
     val tableName: String
+    // The singleton Supabase client instance.
     val client: SupabaseClient get() = SupabaseProvider.supabaseClient
+    // Tag used for logging purposes, defaults to the class name.
     val tag: String get() = this::class.simpleName ?: "BaseRepository"
 }
 
+/**
+ * Fetches a single record from the database based on a column-value pair.
+ * 
+ * @param column The name of the column to filter by.
+ * @param value The value the column must match.
+ * @return The decoded object of type T, or null if not found or an error occurred.
+ */
 suspend inline fun <reified T : Any> BaseRepository.fetchSingle(
     column: String,
     value: Any
@@ -27,6 +41,13 @@ suspend inline fun <reified T : Any> BaseRepository.fetchSingle(
     }
 }
 
+/**
+ * Fetches a list of records from the database based on a column-value pair.
+ * 
+ * @param column The name of the column to filter by.
+ * @param value The value the column must match.
+ * @return A list of decoded objects of type T. Returns an empty list on failure.
+ */
 suspend inline fun <reified T : Any> BaseRepository.fetchList(
     column: String,
     value: Any
@@ -42,6 +63,11 @@ suspend inline fun <reified T : Any> BaseRepository.fetchList(
     }
 }
 
+/**
+ * Fetches all records from the repository's table.
+ * 
+ * @return A list of all decoded objects of type T in the table.
+ */
 suspend inline fun <reified T : Any> BaseRepository.fetchAll(): List<T> {
     return try {
         client.postgrest
@@ -54,6 +80,12 @@ suspend inline fun <reified T : Any> BaseRepository.fetchAll(): List<T> {
     }
 }
 
+/**
+ * Inserts a new record into the database and returns the result.
+ * 
+ * @param item The object to insert.
+ * @return The inserted record as returned by the database, or null on failure.
+ */
 suspend inline fun <reified TInsert : Any, reified TResult : Any> BaseRepository.insert(
     item: TInsert
 ): TResult? {
@@ -68,6 +100,14 @@ suspend inline fun <reified TInsert : Any, reified TResult : Any> BaseRepository
     }
 }
 
+/**
+ * Updates an existing record in the database.
+ * 
+ * @param column The column to filter by (usually 'id').
+ * @param value The value to match for the update.
+ * @param item The new data for the record.
+ * @return The updated record, or null on failure.
+ */
 suspend inline fun <reified T : Any> BaseRepository.update(
     column: String,
     value: Any,
@@ -87,6 +127,13 @@ suspend inline fun <reified T : Any> BaseRepository.update(
     }
 }
 
+/**
+ * Deletes a record from the database.
+ * 
+ * @param column The column to filter by.
+ * @param value The value to match for deletion.
+ * @return True if the operation was successful, false otherwise.
+ */
 suspend inline fun <reified T : Any> BaseRepository.delete(
     column: String,
     value: Any
@@ -102,6 +149,9 @@ suspend inline fun <reified T : Any> BaseRepository.delete(
     }
 }
 
+/**
+ * Utility function to fetch records from a specific table with custom column selection.
+ */
 suspend inline fun <reified T : Any> BaseRepository.fetchTableList(
     targetTable: String = tableName,
     columns: Columns = Columns.ALL,
