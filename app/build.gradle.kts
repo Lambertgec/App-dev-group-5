@@ -64,6 +64,17 @@ android {
             isIncludeAndroidResources = true
             all {
                 it.jvmArgs("-noverify")
+                it.extensions.configure(org.gradle.testing.jacoco.plugins.JacocoTaskExtension::class) {
+                    isIncludeNoLocationClasses = true
+                    excludes = listOf(
+                        "jdk.internal.*",
+                        "org.robolectric.*",
+                        "android.*",
+                        "sun.*",
+                        "com.sun.*",
+                        "javax.*"
+                    )
+                }
             }
         }
     }
@@ -123,14 +134,14 @@ dependencies {
 }
 
 jacoco {
-    toolVersion = "0.8.11"
+    toolVersion = "0.8.13"
 }
 
 sonar {
     properties {
         property("sonar.sources", "src/main/java,src/main/kotlin")
 
-        property("sonar.tests", "src/test/java,src/androidTest/java")
+        property("sonar.tests", "src/test/java,src/test/kotlin,src/androidTest/java,src/androidTest/kotlin")
 
         property("sonar.coverage.jacoco.xmlReportPaths", "${layout.buildDirectory.get()}/reports/jacoco/jacocoTestReport/jacocoTestReport.xml")
 
@@ -160,13 +171,13 @@ tasks.register<JacocoReport>("jacocoTestReport") {
         "android/**/*.*" //Android framework classes
     )
 
-    //Kotlin compiled classes for debug build
-    val kotlinClasses = fileTree(layout.buildDirectory.dir("tmp/kotlin-classes/debug")) {
+    // Kotlin compiled classes for debug build (AGP 8+ emits to built_in_kotlinc)
+    val kotlinClasses = fileTree(layout.buildDirectory.dir("intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes")) {
         exclude(fileFilter)
     }
 
-    //Java compiled classes for debug build
-    val javaClasses = fileTree(layout.buildDirectory.dir("intermediates/javac/debug")) {
+    // Java compiled classes for debug build
+    val javaClasses = fileTree(layout.buildDirectory.dir("intermediates/javac/debug/compileDebugJavaWithJavac/classes")) {
         exclude(fileFilter)
     }
 
