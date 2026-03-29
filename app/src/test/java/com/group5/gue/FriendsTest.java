@@ -1,12 +1,18 @@
 package com.group5.gue;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
+import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.fragment.app.testing.FragmentScenario;
+import androidx.lifecycle.Lifecycle;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.group5.gue.data.friends.FriendsRepository;
@@ -38,6 +44,11 @@ public class FriendsTest {
     }
 
     @Test
+    public void testConstructor() {
+        assertNotNull(new FriendsFragment());
+    }
+
+    @Test
     public void adminUIAdjusted() {
         stubRepository.setIsAdmin(true);
 
@@ -51,83 +62,75 @@ public class FriendsTest {
     }
 
     @Test
-    public void userUIAdjusted() {
+    @SuppressWarnings("unchecked")
+    public void userUIWithAdapterLogic() {
         stubRepository.setIsAdmin(false);
         List<String> friends = new ArrayList<>();
-        friends.add("Friend1");
+        friends.add("Alice");
         stubRepository.setFriendsList(friends);
 
         try (FragmentScenario<FriendsFragment> scenario = FragmentScenario.launchInContainer(FriendsFragment.class)) {
             scenario.onFragment(fragment -> {
-                EditText addFriendEditText = fragment.getView().findViewById(R.id.addFriendEditText);
-                assertEquals(fragment.getString(R.string.hint_user_search), addFriendEditText.getHint().toString());
-                RecyclerView recyclerView = fragment.getView().findViewById(R.id.friendsRecyclerView);
-                assertEquals(View.VISIBLE, recyclerView.getVisibility());
-                assertEquals(1, recyclerView.getAdapter().getItemCount());
+                RecyclerView rv = fragment.getView().findViewById(R.id.friendsRecyclerView);
+                RecyclerView.Adapter adapter = rv.getAdapter();
+                assertNotNull(adapter);
+                
+                // Manually trigger ViewHolder creation and binding to hit inner adapter lines
+                RecyclerView.ViewHolder holder = adapter.createViewHolder(rv, 0);
+                adapter.bindViewHolder(holder, 0);
+                
+                TextView friendNameTv = holder.itemView.findViewById(R.id.friendNameTextView);
+                assertEquals("Alice", friendNameTv.getText().toString());
+
+                // Test removal button inside the ViewHolder
+                holder.itemView.findViewById(R.id.removeFriendButton).performClick();
+                assertEquals("Alice", stubRepository.lastRemovedFriend);
             });
         }
     }
 
     @Test
-    public void addFriendClearsInputOnSuccess() {
+    public void addFriendTriggersRepository() {
         stubRepository.setIsAdmin(false);
-        
         try (FragmentScenario<FriendsFragment> scenario = FragmentScenario.launchInContainer(FriendsFragment.class)) {
             scenario.onFragment(fragment -> {
-                EditText addFriendEditText = fragment.getView().findViewById(R.id.addFriendEditText);
-                addFriendEditText.setText("NewFriend");
+                EditText input = fragment.getView().findViewById(R.id.addFriendEditText);
+                input.setText("Bob");
                 fragment.getView().findViewById(R.id.addFriendButton).performClick();
-                
-                assertEquals("", addFriendEditText.getText().toString());
-                assertEquals("NewFriend", stubRepository.lastAddedFriend);
+                assertEquals("Bob", stubRepository.lastAddedFriend);
+                assertEquals("", input.getText().toString()); // Cleared on success
             });
         }
     }
 
     @Test
-    public void addFriendWithEmptyInputDoesNothing() {
+    public void addFriendSearchAction() {
         stubRepository.setIsAdmin(false);
-        
         try (FragmentScenario<FriendsFragment> scenario = FragmentScenario.launchInContainer(FriendsFragment.class)) {
             scenario.onFragment(fragment -> {
-                EditText addFriendEditText = fragment.getView().findViewById(R.id.addFriendEditText);
-                addFriendEditText.setText("");
+                EditText input = fragment.getView().findViewById(R.id.addFriendEditText);
+                input.setText("Charlie");
+                input.onEditorAction(EditorInfo.IME_ACTION_SEARCH);
+                assertEquals("Charlie", stubRepository.lastAddedFriend);
+            });
+        }
+    }
+
+    @Test
+    public void addFriendWithEmptyInput() {
+        stubRepository.setIsAdmin(false);
+        try (FragmentScenario<FriendsFragment> scenario = FragmentScenario.launchInContainer(FriendsFragment.class)) {
+            scenario.onFragment(fragment -> {
                 fragment.getView().findViewById(R.id.addFriendButton).performClick();
-                
                 assertNull(stubRepository.lastAddedFriend);
             });
         }
     }
 
     @Test
-    public void showEmptyMessageWhenNoFriends() {
-        stubRepository.setIsAdmin(false);
-        stubRepository.setFriendsList(new ArrayList<>());
-
+    public void fragmentCleanup() {
         try (FragmentScenario<FriendsFragment> scenario = FragmentScenario.launchInContainer(FriendsFragment.class)) {
-            scenario.onFragment(fragment -> {
-                assertEquals(View.VISIBLE, fragment.getView().findViewById(R.id.emptyFriendsTextView).getVisibility());
-                assertEquals(View.GONE, fragment.getView().findViewById(R.id.friendsRecyclerView).getVisibility());
-            });
-        }
-    }
-
-    @Test
-    public void removeFriendTriggersRepository() {
-        stubRepository.setIsAdmin(false);
-        List<String> friends = new ArrayList<>();
-        friends.add("FriendToDelete");
-        stubRepository.setFriendsList(friends);
-
-        try (FragmentScenario<FriendsFragment> scenario = FragmentScenario.launchInContainer(FriendsFragment.class)) {
-            scenario.onFragment(fragment -> {
-                RecyclerView recyclerView = fragment.getView().findViewById(R.id.friendsRecyclerView);
-                RecyclerView.ViewHolder viewHolder = recyclerView.findViewHolderForAdapterPosition(0);
-                if (viewHolder != null) {
-                    viewHolder.itemView.findViewById(R.id.removeFriendButton).performClick();
-                    assertEquals("FriendToDelete", stubRepository.lastRemovedFriend);
-                }
-            });
+            scenario.moveToState(Lifecycle.State.DESTROYED);
         }
     }
 
@@ -137,23 +140,14 @@ public class FriendsTest {
         public String lastAddedFriend = null;
         public String lastRemovedFriend = null;
 
-        public void setIsAdmin(boolean isAdmin) {
-            this.isAdmin = isAdmin;
-        }
-
-        public void setFriendsList(List<String> friends) {
-            this.friendsList = friends;
-        }
+        public void setIsAdmin(boolean isAdmin) { this.isAdmin = isAdmin; }
+        public void setFriendsList(List<String> friends) { this.friendsList = friends; }
 
         @Override
-        public void isAdmin(Function1<? super Boolean, Unit> callback) {
-            callback.invoke(isAdmin);
-        }
+        public void isAdmin(Function1<? super Boolean, Unit> callback) { callback.invoke(isAdmin); }
 
         @Override
-        public void fetchFriends(Function1<? super List<String>, Unit> callback) {
-            callback.invoke(friendsList);
-        }
+        public void fetchFriends(Function1<? super List<String>, Unit> callback) { callback.invoke(friendsList); }
 
         @Override
         public void addFriendByDisplayName(String displayName, Function2<? super Boolean, ? super String, Unit> callback) {

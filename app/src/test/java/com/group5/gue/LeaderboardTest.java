@@ -3,7 +3,8 @@ package com.group5.gue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import androidx.fragment.app.testing.FragmentScenario;
@@ -17,6 +18,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
 import java.util.ArrayList;
@@ -51,51 +53,42 @@ public class LeaderboardTest {
 
         try (FragmentScenario<LeaderboardFragment> scenario = FragmentScenario.launchInContainer(LeaderboardFragment.class)) {
             scenario.onFragment(fragment -> {
-                RecyclerView recyclerView = fragment.getView().findViewById(R.id.leaderboardRecyclerView);
-                
-                recyclerView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
-                recyclerView.layout(0, 0, 1000, 1000);
-
-                RecyclerView.Adapter adapter = recyclerView.getAdapter();
+                RecyclerView rv = fragment.getView().findViewById(R.id.leaderboardRecyclerView);
+                RecyclerView.Adapter adapter = rv.getAdapter();
                 assertNotNull(adapter);
                 assertEquals(1, adapter.getItemCount());
 
-                RecyclerView.ViewHolder holder = recyclerView.findViewHolderForAdapterPosition(0);
-                assertNotNull(holder);
+                // Manually trigger binding to ensure 100% coverage of the inner adapter logic
+                RecyclerView.ViewHolder holder = adapter.createViewHolder(rv, 0);
+                adapter.bindViewHolder(holder, 0);
+                
                 TextView nameTv = holder.itemView.findViewById(R.id.leaderboardNameTextView);
                 assertEquals("Alice", nameTv.getText().toString());
             });
+            scenario.moveToState(Lifecycle.State.DESTROYED);
         }
     }
 
     @Test
-    public void leaderboardGlobalWhenNoFriends() {
+    @SuppressWarnings("unchecked")
+    public void leaderboardGlobalFallbackAndUnknownName() {
         stubRepository.setFriendsWithScores(new ArrayList<>());
         List<Profile> global = new ArrayList<>();
-        global.add(new Profile("3", "Charlie", 200L, false));
-        global.add(new Profile("4", null, 150L, false)); // Test null display name path
+        global.add(new Profile("2", null, 50L, false)); // Test null display name branch
         stubRepository.setGlobalUsers(global);
 
         try (FragmentScenario<LeaderboardFragment> scenario = FragmentScenario.launchInContainer(LeaderboardFragment.class)) {
             scenario.onFragment(fragment -> {
-                RecyclerView recyclerView = fragment.getView().findViewById(R.id.leaderboardRecyclerView);
-                recyclerView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
-                recyclerView.layout(0, 0, 1000, 1000);
+                RecyclerView rv = fragment.getView().findViewById(R.id.leaderboardRecyclerView);
+                RecyclerView.Adapter adapter = rv.getAdapter();
+                assertEquals(1, adapter.getItemCount());
                 
-                assertEquals(2, recyclerView.getAdapter().getItemCount());
-                
-                // Verify fallback to "Unknown"
-                RecyclerView.ViewHolder holder = recyclerView.findViewHolderForAdapterPosition(1);
+                RecyclerView.ViewHolder holder = adapter.createViewHolder(rv, 0);
+                adapter.bindViewHolder(holder, 0);
                 TextView nameTv = holder.itemView.findViewById(R.id.leaderboardNameTextView);
+                // Covers the "Unknown" branch
                 assertEquals("Unknown", nameTv.getText().toString());
             });
-        }
-    }
-
-    @Test
-    public void testFragmentDestruction() {
-        try (FragmentScenario<LeaderboardFragment> scenario = FragmentScenario.launchInContainer(LeaderboardFragment.class)) {
-            scenario.moveToState(Lifecycle.State.DESTROYED);
         }
     }
 
