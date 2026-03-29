@@ -3,7 +3,11 @@ package com.group5.gue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import android.view.View;
+import android.widget.TextView;
+
 import androidx.fragment.app.testing.FragmentScenario;
+import androidx.lifecycle.Lifecycle;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.group5.gue.data.friends.FriendsRepository;
@@ -34,18 +38,32 @@ public class LeaderboardTest {
     }
 
     @Test
+    public void testFragmentConstructor() {
+        assertNotNull(new LeaderboardFragment());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     public void leaderboardDisplaysFriendsScores() {
         List<Profile> friends = new ArrayList<>();
         friends.add(new Profile("1", "Alice", 100L, false));
-        friends.add(new Profile("2", "Bob", 50L, false));
         stubRepository.setFriendsWithScores(friends);
 
         try (FragmentScenario<LeaderboardFragment> scenario = FragmentScenario.launchInContainer(LeaderboardFragment.class)) {
             scenario.onFragment(fragment -> {
                 RecyclerView recyclerView = fragment.getView().findViewById(R.id.leaderboardRecyclerView);
-                assertNotNull("RecyclerView should not be null", recyclerView);
-                assertNotNull("Adapter should not be null", recyclerView.getAdapter());
-                assertEquals("Should display 2 friends", 2, recyclerView.getAdapter().getItemCount());
+                
+                recyclerView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+                recyclerView.layout(0, 0, 1000, 1000);
+
+                RecyclerView.Adapter adapter = recyclerView.getAdapter();
+                assertNotNull(adapter);
+                assertEquals(1, adapter.getItemCount());
+
+                RecyclerView.ViewHolder holder = recyclerView.findViewHolderForAdapterPosition(0);
+                assertNotNull(holder);
+                TextView nameTv = holder.itemView.findViewById(R.id.leaderboardNameTextView);
+                assertEquals("Alice", nameTv.getText().toString());
             });
         }
     }
@@ -55,13 +73,29 @@ public class LeaderboardTest {
         stubRepository.setFriendsWithScores(new ArrayList<>());
         List<Profile> global = new ArrayList<>();
         global.add(new Profile("3", "Charlie", 200L, false));
+        global.add(new Profile("4", null, 150L, false)); // Test null display name path
         stubRepository.setGlobalUsers(global);
 
         try (FragmentScenario<LeaderboardFragment> scenario = FragmentScenario.launchInContainer(LeaderboardFragment.class)) {
             scenario.onFragment(fragment -> {
                 RecyclerView recyclerView = fragment.getView().findViewById(R.id.leaderboardRecyclerView);
-                assertEquals("Should display 1 global user", 1, recyclerView.getAdapter().getItemCount());
+                recyclerView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+                recyclerView.layout(0, 0, 1000, 1000);
+                
+                assertEquals(2, recyclerView.getAdapter().getItemCount());
+                
+                // Verify fallback to "Unknown"
+                RecyclerView.ViewHolder holder = recyclerView.findViewHolderForAdapterPosition(1);
+                TextView nameTv = holder.itemView.findViewById(R.id.leaderboardNameTextView);
+                assertEquals("Unknown", nameTv.getText().toString());
             });
+        }
+    }
+
+    @Test
+    public void testFragmentDestruction() {
+        try (FragmentScenario<LeaderboardFragment> scenario = FragmentScenario.launchInContainer(LeaderboardFragment.class)) {
+            scenario.moveToState(Lifecycle.State.DESTROYED);
         }
     }
 
