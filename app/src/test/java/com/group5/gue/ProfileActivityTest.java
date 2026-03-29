@@ -4,11 +4,8 @@ import static org.junit.Assert.*;
 
 import android.app.AlertDialog;
 import android.content.Intent;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-
-import androidx.test.core.app.ApplicationProvider;
 
 import com.group5.gue.data.Result;
 import com.group5.gue.data.model.Role;
@@ -44,8 +41,6 @@ public class ProfileActivityTest {
                 .create(null).start().resume().get();
 
         setPrivateField(activity, "userRepository", repo);
-
-        // drive loadProfileData (since onCreate already ran before injection)
         invokePrivate(activity, "loadProfileData");
 
         TextView username = activity.findViewById(R.id.profileUsername);
@@ -63,16 +58,26 @@ public class ProfileActivityTest {
     public void onCreate_savedInstanceStateNotNull_doesNotCrash_andNullCacheBranchCovered() throws Exception {
         UserRepository repo = Mockito.mock(UserRepository.class);
         Mockito.when(repo.getCachedUser()).thenReturn(null);
-
-        // non-null Bundle => fragment replace branch not taken
         ActivityController<ProfileActivity> controller = Robolectric.buildActivity(ProfileActivity.class)
                 .create(new android.os.Bundle()).start().resume();
 
         ProfileActivity activity = controller.get();
 
         setPrivateField(activity, "userRepository", repo);
-        invokePrivate(activity, "loadProfileData"); // cachedUser == null branch
-        // no assertions needed: coverage + no crash
+        invokePrivate(activity, "loadProfileData");
+    }
+
+    @Test
+    public void onCreate_withActionBarTheme_setsHomeAsUpEnabled() {
+        ActivityController<ProfileActivity> controller = Robolectric.buildActivity(ProfileActivity.class);
+        ProfileActivity activity = controller.get();
+
+        activity.setTheme(androidx.appcompat.R.style.Theme_AppCompat_Light);
+        controller.create(null).start().resume();
+
+        assertNotNull(activity.getSupportActionBar());
+        int displayOptions = activity.getSupportActionBar().getDisplayOptions();
+        assertTrue((displayOptions & androidx.appcompat.app.ActionBar.DISPLAY_HOME_AS_UP) != 0);
     }
 
     @Test
@@ -81,8 +86,6 @@ public class ProfileActivityTest {
 
         ProfileActivity activity = Robolectric.buildActivity(ProfileActivity.class)
                 .create().start().resume().get();
-
-        // set current user so dialog pre-fills and OK handler runs
         setPrivateField(activity, "currentUser", new User("id1", "Bob", 1, false));
         setPrivateField(activity, "userRepository", repo);
 
@@ -92,21 +95,42 @@ public class ProfileActivityTest {
         assertNotNull(dialog);
 
         EditText input = dialog.findViewById(android.R.id.edit);
-        // Robolectric sometimes doesn't assign android.R.id.edit; fallback: search manually
         if (input == null) {
             input = (EditText) dialog.findViewById(0);
         }
-        // safer: just set text via dialog's view hierarchy
-        // If not found, just skip strict lookup and click OK with default (it will be "Bob" prefill).
-        // Instead force empty by finding the first EditText in window decor:
         EditText realInput = findFirstEditText(dialog);
         assertNotNull(realInput);
 
-        realInput.setText("   "); // empty after trim
+        realInput.setText("   ");
 
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
 
         Mockito.verify(repo, Mockito.never()).updateUser(Mockito.any(), Mockito.any());
+    }
+
+    @Test
+    public void changeUsernameDialog_whenCurrentUserNull_nonEmptyInput_doesNotUpdate() throws Exception {
+        UserRepository repo = Mockito.mock(UserRepository.class);
+
+        ProfileActivity activity = Robolectric.buildActivity(ProfileActivity.class)
+                .create().start().resume().get();
+
+        setPrivateField(activity, "currentUser", null);
+        setPrivateField(activity, "userRepository", repo);
+
+        invokePrivate(activity, "showChangeUsernameDialog");
+
+        AlertDialog dialog = ShadowAlertDialog.getLatestAlertDialog();
+        assertNotNull(dialog);
+
+        EditText input = findFirstEditText(dialog);
+        assertNotNull(input);
+        assertEquals("", input.getText().toString());
+
+        input.setText("NameShouldNotApply");
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+
+        Mockito.verify(repo, Mockito.never()).updateUser(Mockito.any(User.class), Mockito.any());
     }
 
     @Test
@@ -118,8 +142,6 @@ public class ProfileActivityTest {
 
         setPrivateField(activity, "currentUser", new User("id1", "Old", 5, false));
         setPrivateField(activity, "userRepository", repo);
-
-        // When updateUser called, invoke callback with success(updatedUser)
         Mockito.doAnswer(invocation -> {
             User updated = invocation.getArgument(0);
             UserUpdateCallback cb =
@@ -141,6 +163,36 @@ public class ProfileActivityTest {
         TextView username = activity.findViewById(R.id.profileUsername);
         assertEquals("NewName", username.getText().toString());
         assertTrue(ShadowToast.getTextOfLatestToast().toString().contains("Username updated successfully"));
+    }
+
+    @Test
+    public void changeUsernameDialog_okWithNonEmpty_whenUpdateReturnsNullResult_noToastShown() throws Exception {
+        UserRepository repo = Mockito.mock(UserRepository.class);
+
+        ProfileActivity activity = Robolectric.buildActivity(ProfileActivity.class)
+                .create().start().resume().get();
+
+        setPrivateField(activity, "currentUser", new User("id1", "Old", 5, false));
+        setPrivateField(activity, "userRepository", repo);
+
+        ShadowToast.reset();
+        Mockito.doAnswer(invocation -> {
+            UserUpdateCallback cb = invocation.getArgument(1);
+            cb.onResult(null);
+            return null;
+        }).when(repo).updateUser(Mockito.any(User.class), Mockito.any());
+
+        invokePrivate(activity, "showChangeUsernameDialog");
+
+        AlertDialog dialog = ShadowAlertDialog.getLatestAlertDialog();
+        EditText input = findFirstEditText(dialog);
+        assertNotNull(input);
+
+        input.setText("NoToastName");
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
+
+        assertNull(ShadowToast.getTextOfLatestToast());
     }
 
     @Test
@@ -171,6 +223,21 @@ public class ProfileActivityTest {
         Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
 
         assertTrue(ShadowToast.getTextOfLatestToast().toString().contains("Failed to update username"));
+    }
+
+    @Test
+    public void updateUsername_whenCurrentUserNull_doesNotCallRepository() throws Exception {
+        UserRepository repo = Mockito.mock(UserRepository.class);
+
+        ProfileActivity activity = Robolectric.buildActivity(ProfileActivity.class)
+                .create().start().resume().get();
+
+        setPrivateField(activity, "currentUser", null);
+        setPrivateField(activity, "userRepository", repo);
+
+        invokePrivateWithArg(activity, "updateUsername", String.class, "NewName");
+
+        Mockito.verify(repo, Mockito.never()).updateUser(Mockito.any(User.class), Mockito.any());
     }
 
     @Test
@@ -224,6 +291,35 @@ public class ProfileActivityTest {
     }
 
     @Test
+    public void deleteAccountDialog_whenDeleteReturnsNullResult_noToastAndNoNavigation() throws Exception {
+        UserRepository repo = Mockito.mock(UserRepository.class);
+
+        ProfileActivity activity = Robolectric.buildActivity(ProfileActivity.class)
+                .create().start().resume().get();
+
+        setPrivateField(activity, "currentUser", new User("id1", "Bob", 1, false));
+        setPrivateField(activity, "userRepository", repo);
+
+        ShadowToast.reset();
+        Mockito.doAnswer(invocation -> {
+            @SuppressWarnings("unchecked")
+            kotlin.jvm.functions.Function1<Result<Void>, kotlin.Unit> cb = invocation.getArgument(0);
+            cb.invoke(null);
+            return null;
+        }).when(repo).deleteAccount(Mockito.any());
+
+        invokePrivate(activity, "showDeleteAccountDialog");
+
+        AlertDialog dialog = ShadowAlertDialog.getLatestAlertDialog();
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
+
+        assertNull(ShadowToast.getTextOfLatestToast());
+        ShadowActivity shadowActivity = Shadows.shadowOf(activity);
+        assertNull(shadowActivity.getNextStartedActivity());
+    }
+
+    @Test
     public void deleteAccountDialog_error_showsToast() throws Exception {
         UserRepository repo = Mockito.mock(UserRepository.class);
 
@@ -250,7 +346,20 @@ public class ProfileActivityTest {
         assertTrue(ShadowToast.getTextOfLatestToast().toString().contains("Failed to delete account"));
     }
 
-    // ---- helpers ----
+    @Test
+    public void displayUserProfile_nullName_setsNotSet_and_handlesMissingViews() throws Exception {
+        ProfileActivity activity = Robolectric.buildActivity(ProfileActivity.class)
+                .create().start().resume().get();
+
+        invokePrivateWithArg(activity, "displayUserProfile", User.class, new User("id9", null, 77, false));
+
+        TextView username = activity.findViewById(R.id.profileUsername);
+        assertEquals("Not set", username.getText().toString());
+
+        activity.setContentView(android.R.layout.simple_list_item_1);
+        invokePrivate(activity, "setupButtons");
+        invokePrivateWithArg(activity, "displayUserProfile", User.class, new User("id8", null, 11, true));
+    }
 
     private static void setPrivateField(Object target, String fieldName, Object value) throws Exception {
         Field f = target.getClass().getDeclaredField(fieldName);
@@ -264,8 +373,13 @@ public class ProfileActivityTest {
         m.invoke(target);
     }
 
+    private static void invokePrivateWithArg(Object target, String methodName, Class<?> argType, Object arg) throws Exception {
+        Method m = target.getClass().getDeclaredMethod(methodName, argType);
+        m.setAccessible(true);
+        m.invoke(target, arg);
+    }
+
     private static EditText findFirstEditText(AlertDialog dialog) {
-        // brute-force walk: dialog.getWindow().getDecorView() exists in Robolectric
         android.view.View root = dialog.getWindow().getDecorView();
         return findFirstEditText(root);
     }
