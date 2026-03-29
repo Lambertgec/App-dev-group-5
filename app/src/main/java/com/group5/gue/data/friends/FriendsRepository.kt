@@ -35,7 +35,7 @@ data class FollowEntry(
     val profile: Profile? = null
 )
 
-class FriendsRepository private constructor() : BaseRepository {
+open class FriendsRepository protected constructor() : BaseRepository {
 
     override val tableName = "follow"
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -50,9 +50,14 @@ class FriendsRepository private constructor() : BaseRepository {
                 instance ?: FriendsRepository().also { instance = it }
             }
         }
+
+        @JvmStatic
+        fun setInstance(repository: FriendsRepository?) {
+            instance = repository
+        }
     }
 
-    fun isAdmin(callback: (Boolean) -> Unit) {
+    open fun isAdmin(callback: (Boolean) -> Unit) {
         scope.launch {
             val currentUserId = client.auth.currentSessionOrNull()?.user?.id
             if (currentUserId == null) {
@@ -74,7 +79,7 @@ class FriendsRepository private constructor() : BaseRepository {
     /**
      * Fetch the list of friends for the current user signed in.
      */
-    fun fetchFriends(callback: (List<String>) -> Unit) {
+    open fun fetchFriends(callback: (List<String>) -> Unit) {
         scope.launch {
             val currentUserId = client.auth.currentSessionOrNull()?.user?.id
 
@@ -107,7 +112,7 @@ class FriendsRepository private constructor() : BaseRepository {
         }
     }
 
-    fun fetchUsersWithScores(callback: (List<Profile>) -> Unit) {
+    open fun fetchUsersWithScores(callback: (List<Profile>) -> Unit) {
         scope.launch {
             val currentUserId = client.auth.currentSessionOrNull()?.user?.id
 
@@ -139,7 +144,7 @@ class FriendsRepository private constructor() : BaseRepository {
     /**
      * Fetch the list of friends along with their scores for the leaderboard.
      */
-    fun fetchFriendsWithScores(callback: (List<Profile>) -> Unit) {
+    open fun fetchFriendsWithScores(callback: (List<Profile>) -> Unit) {
         scope.launch {
             val currentUserId = client.auth.currentSessionOrNull()?.user?.id
 
@@ -175,7 +180,7 @@ class FriendsRepository private constructor() : BaseRepository {
      * Add a friend by their display name.
      * In case the user initiating the action is an admin, elevates the privilege of the target user.
      */
-    fun addFriendByDisplayName(displayName: String, callback: (Boolean, String) -> Unit) {
+    open fun addFriendByDisplayName(displayName: String, callback: (Boolean, String) -> Unit) {
         scope.launch {
             try {
                 val currentUserId = client.auth.currentSessionOrNull()?.user?.id
@@ -280,7 +285,7 @@ class FriendsRepository private constructor() : BaseRepository {
     /**
      * Remove a friend by their display name.
      */
-    fun removeFriendByDisplayName(displayName: String, callback: (Boolean) -> Unit) {
+    open fun removeFriendByDisplayName(displayName: String, callback: (Boolean) -> Unit) {
         scope.launch {
             val currentUserId = client.auth.currentSessionOrNull()?.user?.id
             if (currentUserId == null) {
