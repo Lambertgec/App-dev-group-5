@@ -86,7 +86,8 @@ dependencies {
     testImplementation("org.robolectric:robolectric:4.13")
     testImplementation("androidx.test:core:1.6.1")
     debugImplementation("androidx.fragment:fragment-testing:1.6.1")
-    
+    testImplementation("androidx.work:work-testing:2.9.0")
+
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)

@@ -23,3 +23,4 @@ local.properties
 /.idea/vcs.xml
 sonar-project.properties
 .scannerwork/*
+build.gradle.kts
