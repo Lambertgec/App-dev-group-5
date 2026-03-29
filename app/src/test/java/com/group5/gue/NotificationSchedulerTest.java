@@ -9,7 +9,6 @@ import android.content.Intent;
 import com.group5.gue.notifications.NotificationReceiver;
 import com.group5.gue.notifications.NotificationSoonReceiver;
 
-import static org.mockito.Mockito.mock;
 import static org.robolectric.Shadows.shadowOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -17,7 +16,6 @@ import static org.junit.Assert.assertNull;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.when;
 
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -38,15 +36,16 @@ public class NotificationSchedulerTest {
     @Before
     public void setup() {
         context = ApplicationProvider.getApplicationContext();
-        event = mock(Event.class);
+        // Use a real Event object instead of a mock to avoid Mockito exceptions
+        event = new Event();
         event.title = "Calculus";
-        when(event.getLocation()).thenReturn("Auditorium 2");
+        event.location = "Auditorium 2";
     }
 
     @Test
     public void scheduleCatchUp_beforeWindow_doesNothing() {
         // Event is 2 hours away — outside the 30 min window
-        when(event.getStartTime()).thenReturn(System.currentTimeMillis() + (120 * 60 * 1000));
+        event.startTime = System.currentTimeMillis() + (120 * 60 * 1000);
 
         // Should fire nothing — no broadcast sent
         scheduleCatchUp(context, event);
@@ -58,7 +57,7 @@ public class NotificationSchedulerTest {
     @Test
     public void scheduleCatchUp_inThirtyMinWindow_firesStandardNotification() {
         // Event is 20 mins away — inside the [−30, −10) window
-        when(event.getStartTime()).thenReturn(System.currentTimeMillis() + (20 * 60 * 1000));
+        event.startTime = System.currentTimeMillis() + (20 * 60 * 1000);
 
         scheduleCatchUp(context, event);
 
@@ -72,7 +71,7 @@ public class NotificationSchedulerTest {
     @Test
     public void scheduleCatchUp_inTenMinWindow_firesProximityNotification() {
         // Event is 5 mins away — inside the [−10, start) window
-        when(event.getStartTime()).thenReturn(System.currentTimeMillis() + (5 * 60 * 1000));
+        event.startTime = System.currentTimeMillis() + (5 * 60 * 1000);
 
         scheduleCatchUp(context, event);
 
@@ -86,7 +85,7 @@ public class NotificationSchedulerTest {
     @Test
     public void scheduleCatchUp_afterEventStart_doesNothing() {
         // Event started 5 mins ago
-        when(event.getStartTime()).thenReturn(System.currentTimeMillis() - (5 * 60 * 1000));
+        event.startTime = System.currentTimeMillis() - (5 * 60 * 1000);
 
         scheduleCatchUp(context, event);
 
