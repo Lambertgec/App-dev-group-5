@@ -7,27 +7,29 @@ import android.net.Uri;
 import android.provider.CalendarContract;
 import android.util.Log;
 
-import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
 /**
  * Utility class for interacting with the Android Calendar Provider.
  * This class provides methods to retrieve calendars and events based on various criteria.
+ * It encapsulates the complexities of querying the CalendarContract.
+ *
  */
 public class CalendarHandler {
+    /** Temporary cursor for query results. */
     private Cursor cursor;
 
+    /** Name of the calendar to query events from. */
     private String calendarName;
+
+    /** ContentResolver used to access the calendar data. */
     private final ContentResolver contentResolver;
     /** The name of the currently selected calendar. */
     public static String selectedCalendar = null;
 
     /**
      * Constructs a CalendarHandler using an Activity context.
+     * Extracts the ContentResolver from the provided activity.
      *
      * @param activity The activity from which to get the ContentResolver.
      */
@@ -36,7 +38,8 @@ public class CalendarHandler {
     }
 
     /**
-     * Constructs a CalendarHandler using a ContentResolver.
+     * Constructs a CalendarHandler using a ContentResolver directly.
+     * Useful for background services or workers where an Activity is not available.
      *
      * @param contentResolver The ContentResolver to use for queries.
      */
@@ -50,8 +53,10 @@ public class CalendarHandler {
      * @return A list of strings containing calendar display names.
      */
     public ArrayList<String> getCalendars(){
+        // Define the URI for calendar content
         Uri uri = CalendarContract.Calendars.CONTENT_URI;
 
+        // Specify which columns to retrieve
         String[] EVENT_PROJECTION = new String[] {
                 CalendarContract.Calendars._ID,
                 CalendarContract.Calendars.CALENDAR_DISPLAY_NAME
@@ -64,6 +69,7 @@ public class CalendarHandler {
         }
 
         ArrayList<String> calendarList = new ArrayList<>();
+        // Iterate through the results
         if (cursor != null) {
             while (cursor.moveToNext()) {
                 String displayName = cursor.getString(1);
@@ -78,56 +84,67 @@ public class CalendarHandler {
     /**
      * Retrieves all events from the currently set calendar.
      *
-     * @return A list of Event objects.
+     * @return A list of Event objects associated with the selected calendar.
      */
     public ArrayList<Event> getAllEvents() {
+        // Selection criteria: display name must match the current calendarName
         String selection =
                 CalendarContract.Events.CALENDAR_DISPLAY_NAME + " = ?";
 
+        // Arguments for the selection
         String[] selectionArgs = new String[] {
                 this.calendarName};
 
+        // Submit the query with the defined criteria
         return submitQuery(selection, selectionArgs);
     }
 
 
     /**
-     * Retrieves events that are currently ongoing.
+     * Retrieves events that are currently ongoing based on system time.
+     * An event is ongoing if start time <= now and end time >= now.
      *
      * @return A list of Event objects that started before now and end after now.
      */
     public ArrayList<Event> getOngoingEvent() {
+        // Complex selection for ongoing events restricted by calendar name
         String selection =
                 CalendarContract.Events.CALENDAR_DISPLAY_NAME + " = ? AND " +
                 CalendarContract.Events.DTSTART + " <= ? AND " +
                 CalendarContract.Events.DTEND + " >= ?";
 
+        // Current time in milliseconds
+        String now = String.valueOf(System.currentTimeMillis());
         String[] selectionArgs = new String[]{
                 this.calendarName,
-                String.valueOf(System.currentTimeMillis()),
-                String.valueOf(System.currentTimeMillis())};
+                now,
+                now};
 
         return submitQuery(selection, selectionArgs);
     }
 
     /**
-     * Retrieves events starting soon.
+     * Retrieves events starting within the next hour from the current time.
      *
-     * @return A list of Event objects starting within the next hour.
+     * @return A list of Event objects starting soon.
      */
     public ArrayList<Event> getStartingSoon() {
+        // Selection for events starting between now and one hour from now
         String selection =
                 CalendarContract.Events.CALENDAR_DISPLAY_NAME + " = ? AND " +
                         CalendarContract.Events.DTSTART + " >= ? AND " +
                         CalendarContract.Events.DTSTART + " <= ?";
 
+        // Current system time
         Long timeNow = System.currentTimeMillis();
 
         String[] selectionArgs = new String[]{
                 this.calendarName,
                 String.valueOf(timeNow),
+                // 3,600,000 milliseconds = 1 hour
                 String.valueOf(timeNow + 3600000)};
 
+        // Fetch events starting soon
         return submitQuery(selection, selectionArgs);
     }
 
@@ -147,24 +164,28 @@ public class CalendarHandler {
         String[] selectionArgs = new String[]{
                 this.calendarName,
                 String.valueOf(startOfDay),
+                // 86,400,000 milliseconds = 24 hours
                 String.valueOf(startOfDay + 86400000)};
 
         return submitQuery(selection, selectionArgs);
     }
 
     /**
-     * Helper method to execute a query against the Calendar Provider.
+     * Core helper method to execute a query against the Calendar Provider.
+     * Maps cursor rows to Event objects.
      *
-     * @param query The selection string.
-     * @param args The selection arguments.
-     * @return A list of Event objects matching the query.
+     * @param query The selection string for the SQL WHERE clause.
+     * @param args The arguments to replace placeholders in the selection string.
+     * @return A list of Event objects matching the provided query parameters.
      */
     private ArrayList<Event> submitQuery(String query, String[] args) {
-
         ArrayList<Event> eventList = new ArrayList<>();
+
+        // Only proceed if a calendar name is set
         if (calendarName != null) {
             Uri uri = CalendarContract.Events.CONTENT_URI;
 
+            // Define which event columns to fetch
             String[] EVENT_PROJECTION = new String[]{
                     CalendarContract.Events.CALENDAR_DISPLAY_NAME,
                     CalendarContract.Events.TITLE,
@@ -174,12 +195,15 @@ public class CalendarHandler {
             };
 
             try {
+                // Execute query using the contentResolver
                 cursor = contentResolver.query(uri, EVENT_PROJECTION, query, args, null);
 
                 if (cursor != null) {
                     while (cursor.moveToNext()) {
+                        // Create a new domain object for each row
                         Event event = new Event();
 
+                        // Map columns to fields
                         event.title = cursor.getString(1);
                         event.startTime = cursor.getLong(2);
                         event.endTime = cursor.getLong(3);

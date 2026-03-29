@@ -41,12 +41,36 @@ import com.group5.gue.databinding.ActivityMainBinding;
 
 import kotlin.Unit;
 
+/**
+ * MainActivity is the primary container for the student user experience.
+ * It manages the main application lifecycle, navigation between core fragments, 
+ * background attendance synchronization, and notification scheduling.
+ * 
+ * <p>Key Responsibilities:
+ * <ul>
+ *   <li>Initializing background WorkManager tasks for attendance.</li>
+ *   <li>Handling fragment transitions via the BottomNavigationView.</li>
+ *   <li>Managing system permissions for Calendar and Notifications.</li>
+ *   <li>Configuring notification channels for lecture alerts.</li>
+ *   <li>Providing a top-level options menu for Profile, Settings, and Logout.</li>
+ * </ul>
+ * </p>
+ */
 public class MainActivity extends AppCompatActivity {
+    
+    /** 
+     * Work request to check attendance status.
+     * Ensures consistent tracking even if the app is in the background.
+     */
     PeriodicWorkRequest attendanceWork =
             new PeriodicWorkRequest.Builder(AttendanceCheckWorker.class, 15, TimeUnit.MINUTES)
                     .build();
+
     ActivityMainBinding binding;
 
+    /**
+     * Initializes the activity, sets up the UI, handles permissions, and sarts background work.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,12 +78,16 @@ public class MainActivity extends AppCompatActivity {
 
         EdgeToEdge.enable(this);
         setContentView(binding.getRoot());
+        
+        // Setup the custom Toolbar as the Action Bar
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         createNotificationChannels();
+        // Request necessary permissions
         requestPermissions();
 
+        // Restore previously selected calendar from local storage
         String savedCalendar = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
                 .getString("selected_calendar", null);
 
@@ -67,6 +95,7 @@ public class MainActivity extends AppCompatActivity {
             CalendarHandler.selectedCalendar = savedCalendar;
         }
 
+        // Schedule the periodic attendance check task
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
                 "attendance_check",
                 androidx.work.ExistingPeriodicWorkPolicy.KEEP,
@@ -74,6 +103,7 @@ public class MainActivity extends AppCompatActivity {
         );
 
         switchFragmant(new HomeFragment());
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main),
                 (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -81,6 +111,7 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
+        // Setup listener for bottom navigation menu clicks
         binding.bottomNavigationView.setOnItemSelectedListener(menuItem -> {
            if ((menuItem.getItemId()) == R.id.home) {
                 switchFragmant(new HomeFragment());
@@ -99,20 +130,27 @@ public class MainActivity extends AppCompatActivity {
         handleIntent(getIntent());
     }
 
+    /**
+     * Configures notification channels required for high-importance alerts on Android 8.0+.
+     */
     private void createNotificationChannels() {
+        // Channel creation only needed for API 26+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) {
+                // Channel for general lecture reminders
                 NotificationChannel lectureChannel = new NotificationChannel(
                         "lecture_channel",
                         "Lecture Notifications",
                         NotificationManager.IMPORTANCE_HIGH
                 );
+                // Channel for location-based proximity alerts
                 NotificationChannel proximityChannel = new NotificationChannel(
                         "proximity_channel",
                         "Proximity Notifications",
                         NotificationManager.IMPORTANCE_HIGH
                 );
+                // Register channels with the system
                 manager.createNotificationChannel(lectureChannel);
                 manager.createNotificationChannel(proximityChannel);
             }
@@ -141,7 +179,7 @@ public class MainActivity extends AppCompatActivity {
     private void scheduleNotifications() {
         if (CalendarHandler.selectedCalendar != null && 
             ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED) {
-            
+
             CalendarHandler handler = new CalendarHandler(getContentResolver());
             handler.setCalendar(CalendarHandler.selectedCalendar);
 
@@ -174,41 +212,60 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Initializes the options menu in the top Action Bar.
+     *
+     * @return true to display the menu.
+     */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+        // P populate the top menu
         MenuInflater menuInflater = new MenuInflater(this);
         menuInflater.inflate(R.menu.top_menu, menu);
 
+        // Configure logic for Profile menu item
         MenuItem profile = menu.findItem(R.id.profile);
         profile.setOnMenuItemClickListener(item -> {
+            // Start the profile view activity
             Intent intent = new Intent(MainActivity.this, ProfileActivity.class);
             startActivity(intent);
             return true;
         });
 
+        // Configure logic for Settings menu item
         MenuItem setting = menu.findItem(R.id.setting);
         setting.setOnMenuItemClickListener(item -> {
+            // Start the settings preference activity
             Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
             startActivity(intent);
             return true;
         });
 
+        // Configure logic for Logout menu item
         MenuItem logout = menu.findItem(R.id.logout);
         logout.setOnMenuItemClickListener(item -> {
+            // Initiate logout
             AuthManager.Companion.getInstance(MainActivity.this).logout(result -> {
+               // On successful logout, return to the Launcher screen
                Intent intent = new Intent(MainActivity.this, LauncherActivity.class);
                startActivity(intent);
                return Unit.INSTANCE;
-
             });
             return true;
         });
         return true;
     }
 
+    /**
+     * Helper method to replace the current fragment in the main container.
+     * 
+     * @param fragment The new Fragment instance to display.
+     */
     private void switchFragmant(Fragment fragment){
+        // Obtain fragment manager and start transaction
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        // Replace current fragment with the new one
         fragmentTransaction.replace(R.id.frame_one, fragment);
         fragmentTransaction.commit();
     }
