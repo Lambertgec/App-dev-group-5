@@ -21,6 +21,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/**
+ * Data class representing a user profile from the 'profile' table.
+ */
 @Serializable
 data class Profile(
     @SerialName("id") val id: String? = null,
@@ -29,21 +32,32 @@ data class Profile(
     @SerialName("is_admin") var isAdmin: Boolean = false
 )
 
+/**
+ * Data class used for decoding join results between 'follow' and 'profile' tables.
+ */
 @Serializable
 data class FollowEntry(
     @SerialName("user_id") val userID: String,
     val profile: Profile? = null
 )
 
+/**
+ * Repository for managing social connections (following/followers) and user profiles.
+ */
 open class FriendsRepository protected constructor() : BaseRepository {
 
+    // The database table name for follow relationships.
     override val tableName = "follow"
+    // Coroutine scope for repository background tasks.
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     companion object {
         @Volatile
         private var instance: FriendsRepository? = null
 
+        /**
+         * Returns the singleton instance of FriendsRepository.
+         */
         @JvmStatic
         fun getInstance(): FriendsRepository {
             return instance ?: synchronized(this) {
@@ -51,12 +65,19 @@ open class FriendsRepository protected constructor() : BaseRepository {
             }
         }
 
+        /**
+         * Sets the instance of FriendsRepository.
+         */
         @JvmStatic
         fun setInstance(repository: FriendsRepository?) {
             instance = repository
         }
     }
 
+    /**
+     * Checks if the currently logged-in user has administrative privileges.
+     * @param callback Function called with true if admin, false otherwise.
+     */
     open fun isAdmin(callback: (Boolean) -> Unit) {
         scope.launch {
             val currentUserId = client.auth.currentSessionOrNull()?.user?.id
@@ -77,7 +98,8 @@ open class FriendsRepository protected constructor() : BaseRepository {
     }
 
     /**
-     * Fetch the list of friends for the current user signed in.
+     * Fetches the display names of all users followed by the current user.
+     * @param callback Function called with the list of friend names.
      */
     open fun fetchFriends(callback: (List<String>) -> Unit) {
         scope.launch {
@@ -112,6 +134,10 @@ open class FriendsRepository protected constructor() : BaseRepository {
         }
     }
 
+    /**
+     * Fetches the top 10 users ranked by their score for a global leaderboard.
+     * @param callback Function called with the list of top profiles.
+     */
     open fun fetchUsersWithScores(callback: (List<Profile>) -> Unit) {
         scope.launch {
             val currentUserId = client.auth.currentSessionOrNull()?.user?.id
@@ -142,7 +168,8 @@ open class FriendsRepository protected constructor() : BaseRepository {
     }
 
     /**
-     * Fetch the list of friends along with their scores for the leaderboard.
+     * Fetches the profiles of friends (followed users) including their scores.
+     * @param callback Function called with the list of profiles, sorted by score.
      */
     open fun fetchFriendsWithScores(callback: (List<Profile>) -> Unit) {
         scope.launch {
@@ -176,9 +203,10 @@ open class FriendsRepository protected constructor() : BaseRepository {
         }
     }
 
-    /*
-     * Add a friend by their display name.
-     * In case the user initiating the action is an admin, elevates the privilege of the target user.
+    /**
+     * Adds a friend relationship. If current user is admin, it elevates the target user instead.
+     * @param displayName The display name of the user to follow or elevate.
+     * @param callback Function called with success status and a status message.
      */
     open fun addFriendByDisplayName(displayName: String, callback: (Boolean, String) -> Unit) {
         scope.launch {
@@ -235,8 +263,8 @@ open class FriendsRepository protected constructor() : BaseRepository {
         }
     }
 
-    /*
-     * Elevate the privilege of a user by their display name (admin only).
+    /**
+     * Internal method to elevate a user's privileges to admin.
      */
     private suspend fun elevatePrivilege(displayName: String, callback: (Boolean, String) -> Unit) {
         scope.launch {
@@ -283,7 +311,9 @@ open class FriendsRepository protected constructor() : BaseRepository {
     }
 
     /**
-     * Remove a friend by their display name.
+     * Removes a follow relationship by the target user's display name.
+     * @param displayName The name of the user to unfollow.
+     * @param callback Function called with true if successful.
      */
     open fun removeFriendByDisplayName(displayName: String, callback: (Boolean) -> Unit) {
         scope.launch {

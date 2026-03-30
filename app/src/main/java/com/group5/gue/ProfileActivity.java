@@ -20,6 +20,7 @@ import com.group5.gue.ui.login.launcher.LauncherActivity;
 /**
  * Activity for viewing and managing the user's profile.
  * Allows users to view their score, change their username, and delete their account.
+ * This activity interacts with the UserRepository to persist changes to the backend.
  */
 public class ProfileActivity extends AppCompatActivity {
 
@@ -29,13 +30,17 @@ public class ProfileActivity extends AppCompatActivity {
     private User currentUser;
 
     /**
-     * Initializes the profile activity and its components.
+     * Initializes the profile activity, sets up the UI components, and loads the user data.
+     * @param savedInstanceState If the activity is being re-initialized after previously being
+     *                           shut down then this Bundle contains the data it most recently
+     *                           supplied.
      */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
         
+        // Initialize the repository instance
         userRepository = UserRepository.Companion.getInstance();
         
         // Host the profile fragment if not already present
@@ -51,12 +56,14 @@ public class ProfileActivity extends AppCompatActivity {
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
         
+        // Load the initial set of user data and bind click listeners to buttons
         loadProfileData();
         setupButtons();
     }
 
     /**
-     * Retrieves the user data from the local cache.
+     * Retrieves the user data from the local cache provided by UserRepository.
+     * If data exists, it triggers the UI update.
      */
     private void loadProfileData() {
         User cachedUser = userRepository.getCachedUser();
@@ -67,17 +74,20 @@ public class ProfileActivity extends AppCompatActivity {
 
     /**
      * Updates the UI widgets with the provided user information.
+     * Maps user model fields to their respective TextViews.
      * 
      * @param user The user object containing the data to display.
      */
     private void displayUserProfile(User user) {
         this.currentUser = user;
         
+        // Find views by their resource IDs
         TextView usernameView = findViewById(R.id.profileUsername);
         TextView scoreView = findViewById(R.id.profileScore);
         TextView userIdView = findViewById(R.id.profileUserId);
         TextView roleView = findViewById(R.id.profileRole);
 
+        // Update the text content if the views are successfully bound
         if (usernameView != null) {
             usernameView.setText(user.getName() != null ? user.getName() : "Not set");
         }
@@ -93,7 +103,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     /**
-     * Configures the click listeners for action buttons.
+     * Configures the click listeners for action buttons like 'Change Username' and 'Delete Account'.
      */
     private void setupButtons() {
         Button changeUsernameButton = findViewById(R.id.changeUsernameButton);
@@ -115,23 +125,27 @@ public class ProfileActivity extends AppCompatActivity {
         builder.setTitle("Change Username");
         builder.setMessage("Enter new username:");
 
+        // Create an EditText for user input
         final EditText input = new EditText(this);
         input.setText(currentUser != null && currentUser.getName() != null ? currentUser.getName() : "");
         builder.setView(input);
 
+        // Set up the positive button to trigger the update
         builder.setPositiveButton("OK", (dialog, which) -> {
             String newUsername = input.getText().toString().trim();
             if (!newUsername.isEmpty() && currentUser != null) {
                 updateUsername(newUsername);
             }
         });
+        // Set up the negative button to dismiss the dialog
         builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
 
         builder.show();
     }
 
     /**
-     * Displays a confirmation dialog before deleting the user account.
+     * Displays a confirmation dialog before proceeding with user account deletion.
+     * This is a destructive operation that cannot be reversed.
      */
     private void showDeleteAccountDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -178,6 +192,7 @@ public class ProfileActivity extends AppCompatActivity {
     private void updateUsername(String newUsername) {
         if (currentUser == null) return;
         
+        // Create a new User object with the updated name, maintaining other fields
         User updatedUser = new User(
             currentUser.getId(),
             newUsername,
@@ -185,9 +200,11 @@ public class ProfileActivity extends AppCompatActivity {
             currentUser.isAdmin()
         );
         
+        // Call repository to update the user data in the database
         userRepository.updateUser(updatedUser, result -> {
             runOnUiThread(() -> {
                 if (result instanceof Result.Success) {
+                    // Update the local currentUser and refresh the UI
                     currentUser = ((Result.Success<User>) result).getData();
                     displayUserProfile(currentUser);
                     Toast.makeText(
@@ -196,6 +213,7 @@ public class ProfileActivity extends AppCompatActivity {
                         Toast.LENGTH_SHORT
                     ).show();
                 } else if (result instanceof Result.Error) {
+                    // Inform the user if the update fails
                     Exception error = ((Result.Error<User>) result).getError();
                     Toast.makeText(
                         ProfileActivity.this,
@@ -208,12 +226,14 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     /**
-     * Fragment placeholder for profile settings.
+     * Fragment placeholder for profile settings. 
+     * Currently serves as a container for future preference-based UI elements.
      */
     public static class ProfileFragment extends PreferenceFragmentCompat {
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
-            //setPreferencesFromResource(R.xml.root_preferences, rootKey);
+            // Note: preferences can be loaded from XML resource here in the future
+            // setPreferencesFromResource(R.xml.root_preferences, rootKey);
         }
     }
 }

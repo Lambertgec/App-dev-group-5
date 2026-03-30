@@ -30,6 +30,7 @@ import kotlin.Unit;
 /**
  * Fragment that displays a gallery of collectibles in a grid layout.
  * Users can view their owned items, see details for each item, and admins can upload new ones.
+ * It manages the synchronization between the global collectible list and the user's unlocked items.
  */
 public class CollectiblesGalleryFragment extends Fragment {
 
@@ -38,14 +39,23 @@ public class CollectiblesGalleryFragment extends Fragment {
     // Repository for accessing user profile and score information.
     private final UserRepository userRepository = UserRepository.Companion.getInstance();
 
+    // The currently logged-in user's profile data.
     private User currentUser;
+    // Adapter for the RecyclerView to bind collectible data to the grid UI.
     private CollectibleGridAdapter adapter;
+    // Loading indicator shown while fetching data from the backend.
     private ProgressBar progressBar;
+    // View shown when no collectibles are available to display.
     private TextView emptyView;
+    // Displays the user's current total score at the top of the gallery.
     private TextView userScoreView;
+    // Container for the expanded view of a selected collectible's details.
     private View detailCard;
+    // TextView to display the name of the selected collectible.
     private TextView detailNameView;
+    // TextView to display the point cost/value of the selected collectible.
     private TextView detailCostView;
+    // TextView to display the long-form description of the selected collectible.
     private TextView detailDescriptionView;
     // Tracks which collectibles the user has already acquired.
     private Set<Integer> ownedCollectibleIds = new HashSet<>();
@@ -60,15 +70,19 @@ public class CollectiblesGalleryFragment extends Fragment {
 
     /**
      * Sets up UI components, adapters, and result listeners for the gallery view.
+     * @param view The View returned by onCreateView.
+     * @param savedInstanceState If non-null, this fragment is being re-constructed from a previous saved state.
      */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        // Retrieve the user from cache to determine permissions (admin) and score
         currentUser = userRepository.getCachedUser();
         adapter = new CollectibleGridAdapter(this::showDetails);
 
 
+        // Bind UI components from the layout
         progressBar = view.findViewById(R.id.collectiblesProgressBar);
         emptyView = view.findViewById(R.id.collectiblesEmptyView);
         userScoreView = view.findViewById(R.id.collectiblesUserScore);
@@ -107,6 +121,7 @@ public class CollectiblesGalleryFragment extends Fragment {
             (requestKey, result) -> loadCollectibles(true)
         );
 
+        // Hide details by default and fetch initial data
         detailCard.setVisibility(View.GONE);
         refreshUserScore();
         loadCollectibles(false);
@@ -136,6 +151,7 @@ public class CollectiblesGalleryFragment extends Fragment {
             String userId = currentUser != null ? currentUser.getId() : null;
 
             if (userId == null || userId.trim().isEmpty()) {
+                // If no user is logged in, treat all as unowned
                 applyCollectiblesState(collectibles, new HashSet<>(), showUploadToast);
                 return Unit.INSTANCE;
             }
@@ -150,7 +166,12 @@ public class CollectiblesGalleryFragment extends Fragment {
     }
 
     /**
-     * Sorts and displays the collectible items in the adapter.
+     * Processes the fetched collectibles and updates the adapter.
+     * Sorts items to show the most recent ones at the top.
+     * 
+     * @param collectibles Full list of available collectibles.
+     * @param ownedIds Set of IDs representing collectibles owned by the user.
+     * @param showUploadToast Flag to trigger a success toast.
      */
     private void applyCollectiblesState(
         List<Collectible> collectibles,
@@ -167,6 +188,7 @@ public class CollectiblesGalleryFragment extends Fragment {
         adapter.setOwnedCollectibleIds(ownedCollectibleIds);
         adapter.submitItems(sortedCollectibles);
 
+        // Toggle empty state message if no items are found
         emptyView.setText(R.string.collectibles_empty);
         emptyView.setVisibility(sortedCollectibles.isEmpty() ? View.VISIBLE : View.GONE);
 
@@ -187,6 +209,7 @@ public class CollectiblesGalleryFragment extends Fragment {
         detailCostView.setText(getString(R.string.collectible_cost, collectible.getScore()));
 
 
+        // Display description or a fallback message if it's missing
         String description = collectible.getDescription();
         if (description == null || description.trim().isEmpty()) {
             detailDescriptionView.setText(R.string.collectible_no_description);
@@ -202,6 +225,7 @@ public class CollectiblesGalleryFragment extends Fragment {
      */
     private void setupDeleteButton(Collectible collectible) {
         Button deletebutton = detailCard.findViewById(R.id.collectibleDetailDeleteButton);
+        // Deletion is a privileged operation restricted to administrators
         if (currentUser != null && currentUser.isAdmin()) {
             deletebutton.setVisibility(View.VISIBLE);
             deletebutton.setOnClickListener(v -> repository.deleteCollectible(collectible.getId(), result -> {
