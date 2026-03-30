@@ -18,6 +18,10 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/**
+ * A singleton repository for managing User data.
+ *
+ */
 class UserRepository private constructor() : BaseRepository {
 
     override val tableName = "profile"
@@ -64,7 +68,6 @@ class UserRepository private constructor() : BaseRepository {
      *
      * @return Result with the fetched User or an error if fetching fails
      */
-
     suspend fun fetchUserById(userId: String, cache: Boolean): Result<User> {
         return try {
             val user = fetchSingle<User>("id", userId)
@@ -126,8 +129,14 @@ class UserRepository private constructor() : BaseRepository {
         }
     }
 
+    /**
+     * Updates the user's profile
+     */
     fun getCachedUser(): User? = cachedUser
 
+    /**
+     * Updates the user's profile
+     */
     fun setCachedUser(user: User?) { cachedUser = user }
 
     @Serializable
