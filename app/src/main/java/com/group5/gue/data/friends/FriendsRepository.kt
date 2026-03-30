@@ -22,7 +22,12 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Data class representing a user profile from the 'profile' table.
+ * Data class representing a user profile fetched from the Supabase 'profile' table.
+ * 
+ * @property id The unique identifier of the user (UUID string).
+ * @property displayName The publicly visible name of the user.
+ * @property score The current total points accumulated by the user.
+ * @property isAdmin Boolean flag indicating if the user has administrator rights.
  */
 @Serializable
 data class Profile(
@@ -34,6 +39,10 @@ data class Profile(
 
 /**
  * Data class used for decoding join results between 'follow' and 'profile' tables.
+ * This structure matches the nested JSON returned by Supabase when performing a join query.
+ * 
+ * @property userID The ID of the user being followed.
+ * @property profile The profile details of the user being followed, retrieved via join.
  */
 @Serializable
 data class FollowEntry(
@@ -42,21 +51,33 @@ data class FollowEntry(
 )
 
 /**
- * Repository for managing social connections (following/followers) and user profiles.
+ * Repository responsible for managing social relationships and user profile data.
+ * It provides abstraction over Supabase database calls for following users, 
+ * checking admin status, and fetching leaderboards.
+ * 
+ * This class uses Kotlin Coroutines for asynchronous operations and handles thread switching.
  */
 open class FriendsRepository protected constructor() : BaseRepository {
 
     // The database table name for follow relationships.
     override val tableName = "follow"
-    // Coroutine scope for repository background tasks.
+    
+    /** 
+     * The coroutine scope used for all background operations in this repository.
+     * Uses SupervisorJob to ensure failure in one task doesn't cancel others.
+     */
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     companion object {
+        // The singleton instance of the repository.
         @Volatile
         private var instance: FriendsRepository? = null
 
         /**
-         * Returns the singleton instance of FriendsRepository.
+         * Returns the thread-safe singleton instance of FriendsRepository.
+         * If the instance doesn't exist, it creates one using the protected constructor.
+         * 
+         * @return The active FriendsRepository instance.
          */
         @JvmStatic
         fun getInstance(): FriendsRepository {
@@ -66,7 +87,10 @@ open class FriendsRepository protected constructor() : BaseRepository {
         }
 
         /**
-         * Sets the instance of FriendsRepository.
+         * Manually sets the repository instance.
+         * Primarily used in unit tests to inject mock or fake repositories.
+         * 
+         * @param repository The repository instance to use.
          */
         @JvmStatic
         fun setInstance(repository: FriendsRepository?) {
@@ -75,20 +99,26 @@ open class FriendsRepository protected constructor() : BaseRepository {
     }
 
     /**
-     * Checks if the currently logged-in user has administrative privileges.
-     * @param callback Function called with true if admin, false otherwise.
+     * Checks if the currently authenticated user has administrator privileges.
+     * Fetches the user profile from the database to check the 'is_admin' field.
+     * 
+     * @param callback A function called on the Main thread with the result (true if admin).
      */
     open fun isAdmin(callback: (Boolean) -> Unit) {
         scope.launch {
+            // Get current session from Supabase Auth
             val currentUserId = client.auth.currentSessionOrNull()?.user?.id
             if (currentUserId == null) {
                 withContext(Dispatchers.Main) { callback(false) }
                 return@launch
             }
             try {
+                // Fetch only the profile of the current user
                 val profile = client.from("profile").select {
                     filter { eq("id", currentUserId) }
                 }.decodeSingleOrNull<Profile>()
+                
+                // Return admin status or false if profile missing
                 withContext(Dispatchers.Main) { callback(profile?.isAdmin ?: false) }
             } catch (e: Exception) {
                 Log.e("FriendsRepository", "isAdmin check error", e)
@@ -112,6 +142,7 @@ open class FriendsRepository protected constructor() : BaseRepository {
             }
 
             val friends = try {
+                // Perform join query: fetch user_id from follow and display_name from joined profile
                 val response = client.from(tableName).select(
                     Columns.raw("user_id, profile!user_id(display_name)")
                 ) {
@@ -120,6 +151,7 @@ open class FriendsRepository protected constructor() : BaseRepository {
                     }
                 }
 
+                // Decode the result into FollowEntry objects and extract names
                 val entries = response.decodeList<FollowEntry>()
                 Log.d("FriendsRepository", "fetchFriends: Found ${entries.size} following for $currentUserId. Data: ${response.data}")
                 entries.mapNotNull { it.profile?.displayName }
@@ -135,8 +167,10 @@ open class FriendsRepository protected constructor() : BaseRepository {
     }
 
     /**
-     * Fetches the top 10 users ranked by their score for a global leaderboard.
-     * @param callback Function called with the list of top profiles.
+     * Retrieves the top 10 users with the highest scores for the global leaderboard.
+     * Filters out users without a display name.
+     * 
+     * @param callback A function called on the Main thread with the list of top 10 Profiles.
      */
     open fun fetchUsersWithScores(callback: (List<Profile>) -> Unit) {
         scope.launch {
@@ -148,6 +182,7 @@ open class FriendsRepository protected constructor() : BaseRepository {
             }
 
             val topUsers = try {
+                // Query profiles table, sort by score descending, limit to 10
                 val response = client.from("profile").select {
                     filter {
                         neq("display_name", "")
@@ -168,8 +203,10 @@ open class FriendsRepository protected constructor() : BaseRepository {
     }
 
     /**
-     * Fetches the profiles of friends (followed users) including their scores.
-     * @param callback Function called with the list of profiles, sorted by score.
+     * Fetches the profiles of users followed by the current user, including their scores.
+     * Results are sorted locally by score in descending order for the 'Friends Leaderboard'.
+     * 
+     * @param callback A function called on the Main thread with the sorted list of Profiles.
      */
     open fun fetchFriendsWithScores(callback: (List<Profile>) -> Unit) {
         scope.launch {
@@ -181,6 +218,7 @@ open class FriendsRepository protected constructor() : BaseRepository {
             }
 
             val friends = try {
+                // Query follows table and join with profile to get names and scores
                 val response = client.from(tableName).select(
                     Columns.raw("user_id, profile!user_id(display_name, score)")
                 ) {
@@ -189,6 +227,7 @@ open class FriendsRepository protected constructor() : BaseRepository {
                     }
                 }
 
+                // Extract profiles from the wrapped join result and sort them
                 val entries = response.decodeList<FollowEntry>()
                 entries.mapNotNull { it.profile }
                     .sortedByDescending { it.score }
@@ -204,13 +243,19 @@ open class FriendsRepository protected constructor() : BaseRepository {
     }
 
     /**
-     * Adds a friend relationship. If current user is admin, it elevates the target user instead.
-     * @param displayName The display name of the user to follow or elevate.
-     * @param callback Function called with success status and a status message.
+     * Adds a friend by their display name.
+     * 
+     * Special Behavior:
+     * - If the current user is an admin, this method instead elevates the target user to admin.
+     * - Otherwise, it creates a new entry in the 'follow' table.
+     * 
+     * @param displayName The name of the user to follow or elevate.
+     * @param callback Callback returning success status and a descriptive UI message.
      */
     open fun addFriendByDisplayName(displayName: String, callback: (Boolean, String) -> Unit) {
         scope.launch {
             try {
+                // Ensure user is logged in
                 val currentUserId = client.auth.currentSessionOrNull()?.user?.id
                 if (currentUserId == null) {
                     withContext(Dispatchers.Main) {
@@ -219,22 +264,27 @@ open class FriendsRepository protected constructor() : BaseRepository {
                     return@launch
                 }
 
+                // Check current user's role
                 val currentUserProfile = client.from("profile").select {
                     filter { eq("id", currentUserId) }
                 }.decodeSingleOrNull<Profile>()
 
                 if (currentUserProfile?.isAdmin == true) {
+                    // Admin branch: elevate the user
                     elevatePrivilege(displayName, callback)
                 } else {
+                    // Standard user branch: follow the user
                     val profile = client.from("profile").select {
                         filter { eq("display_name", displayName) }
                     }.decodeSingleOrNull<Profile>()
 
+                    // Validation: user must exist
                     if (profile == null || profile.id == null) {
                         withContext(Dispatchers.Main) { callback(false, "User not found") }
                         return@launch
                     }
 
+                    // Validation: cannot follow yourself
                     if (profile.id == currentUserId) {
                         withContext(Dispatchers.Main) {
                             callback(false, "You cannot follow yourself.")
@@ -242,6 +292,7 @@ open class FriendsRepository protected constructor() : BaseRepository {
                         return@launch
                     }
 
+                    // Create follow record with current date
                     val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                     val newFollow = Follow(
                         userID = profile.id,
@@ -249,6 +300,7 @@ open class FriendsRepository protected constructor() : BaseRepository {
                         createdAt = sdf.format(Date())
                     )
 
+                    // Insert into Supabase
                     val result = insert<Follow, Follow>(newFollow)
                     withContext(Dispatchers.Main) {
                         if (result != null) callback(true, "Followed ${profile.displayName}!")
@@ -264,7 +316,11 @@ open class FriendsRepository protected constructor() : BaseRepository {
     }
 
     /**
-     * Internal method to elevate a user's privileges to admin.
+     * Internal helper method to elevate a user's role to Administrator.
+     * Restricted to being called by an admin user.
+     * 
+     * @param displayName Display name of the user to be promoted.
+     * @param callback Callback returning success and status message.
      */
     private suspend fun elevatePrivilege(displayName: String, callback: (Boolean, String) -> Unit) {
         scope.launch {
@@ -275,6 +331,7 @@ open class FriendsRepository protected constructor() : BaseRepository {
                     return@launch
                 }
 
+                // Verify admin status again before promotion logic
                 val currentUserProfile = client.from("profile").select {
                     filter { eq("id", currentUserId) }
                 }.decodeSingleOrNull<Profile>()
@@ -284,6 +341,7 @@ open class FriendsRepository protected constructor() : BaseRepository {
                     return@launch
                 }
 
+                // Find the target user profile
                 val targetProfile = client.from("profile").select {
                     filter { eq("display_name", displayName) }
                 }.decodeSingleOrNull<Profile>()
@@ -293,8 +351,10 @@ open class FriendsRepository protected constructor() : BaseRepository {
                     return@launch
                 }
 
+                // Update the isAdmin flag and save back to database
                 targetProfile.isAdmin = true
 
+                // Use a temporary repo object to update the profile table
                 val profileRepo = object : BaseRepository {override val tableName = "profile"}
                 val result = profileRepo.update("id", targetProfile.id, targetProfile)
 
@@ -311,9 +371,10 @@ open class FriendsRepository protected constructor() : BaseRepository {
     }
 
     /**
-     * Removes a follow relationship by the target user's display name.
-     * @param displayName The name of the user to unfollow.
-     * @param callback Function called with true if successful.
+     * Removes a follow relationship between the current user and another user.
+     * 
+     * @param displayName The display name of the user to unfollow.
+     * @param callback Callback returning true if the deletion was successful.
      */
     open fun removeFriendByDisplayName(displayName: String, callback: (Boolean) -> Unit) {
         scope.launch {
@@ -324,6 +385,7 @@ open class FriendsRepository protected constructor() : BaseRepository {
             }
 
             try {
+                // First find the user ID corresponding to the display name
                 val profile = client.from("profile").select {
                     filter { eq("display_name", displayName) }
                 }.decodeSingleOrNull<Profile>()
@@ -333,6 +395,7 @@ open class FriendsRepository protected constructor() : BaseRepository {
                     return@launch
                 }
 
+                // Delete the record from 'follow' table where follower_id is current and user_id is target
                 client.from(tableName).delete {
                     filter {
                         eq("follower_id", currentUserId)
