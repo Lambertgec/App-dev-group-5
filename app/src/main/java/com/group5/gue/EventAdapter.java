@@ -79,8 +79,10 @@ public class EventAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof HeaderViewHolder) {
+            // Bind the header text
             ((HeaderViewHolder) holder).bind(items.get(position).header);
         } else if (holder instanceof EventViewHolder) {
+            // Bind the event data to the view
             ((EventViewHolder) holder).bind(items.get(position).event);
         }
     }
@@ -99,6 +101,7 @@ public class EventAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
     static class HeaderViewHolder extends RecyclerView.ViewHolder {
         private final TextView headerText;
 
+        // Constructor initializes the header text view.
         public HeaderViewHolder(@NonNull View itemView) {
             super(itemView);
             headerText = itemView.findViewById(R.id.headerText);
@@ -153,11 +156,14 @@ public class EventAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
             // Highlight ongoing events in green and events starting soon in orange
             if (event.startTime <= now && event.endTime >= now) {
-                colorBar.setBackgroundColor(0xFF2E7D32); // green — ongoing
+                // green — ongoing
+                colorBar.setBackgroundColor(0xFF2E7D32);
             } else if (timeUntilStart > 0 && timeUntilStart <= 60 * 60 * 1000) {
-                colorBar.setBackgroundColor(0xFFE65100); // orange — starting within 1 hour
+                // orange — starting within 1 hour
+                colorBar.setBackgroundColor(0xFFE65100);
             } else {
-                colorBar.setBackgroundColor(0x00000000); // transparent
+                // transparent
+                colorBar.setBackgroundColor(0x00000000);
             }
         }
     }

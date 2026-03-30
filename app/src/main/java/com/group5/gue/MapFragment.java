@@ -234,6 +234,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             }
             return handler;
         } catch (Exception e) {
+            // Handle any exceptions that might occur during initialization
             e.printStackTrace();
             return null;
         }
@@ -244,16 +245,29 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
      */
     private GoogleMap.InfoWindowAdapter buildInfoWindowAdapter() {
         return new GoogleMap.InfoWindowAdapter() {
+
+            /**
+             * Unused method.
+             * @param marker The marker whose info window is being displayed.
+             * @return null.
+             */
             @Nullable
             @Override
             public View getInfoContents(@NonNull Marker marker) { return null; }
 
+
+            /**
+             * Customizes the content of the info window.
+             * @param marker The marker whose info window is being displayed.
+             * @return A custom view representing the info window.
+             */
             @Nullable
             @Override
             public View getInfoWindow(@NonNull Marker marker) {
                 View window = getLayoutInflater().inflate(R.layout.custom_info_window, null);
                 ((TextView) window.findViewById(R.id.info_window_title)).setText(marker.getTitle());
                 ((TextView) window.findViewById(R.id.info_window_snippet)).setText(marker.getSnippet());
+                // Hide the delete icon by default
                 ImageView deleteIcon = window.findViewById(R.id.delete);
                 // Only show the delete option if the user is an administrator
                 deleteIcon.setVisibility(adminMapManager.isAdmin() ? View.VISIBLE : View.GONE);

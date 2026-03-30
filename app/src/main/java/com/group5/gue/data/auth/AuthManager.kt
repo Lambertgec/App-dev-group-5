@@ -36,9 +36,13 @@ private const val GOOGLE_CLIENT_ID =
 
 class AuthManager private constructor(context: Context) {
 
+    // App context
     private val appContext = context.applicationContext
+    // Supabase client
     private val supabase = SupabaseProvider.supabaseClient
+    // User repository
     private val userRepository = UserRepository.getInstance()
+    // Coroutine scope
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     companion object {
@@ -47,6 +51,9 @@ class AuthManager private constructor(context: Context) {
         @Volatile
         private var INSTANCE: AuthManager? = null
 
+        /**
+         * Singleton instance of AuthManager
+         */
         fun getInstance(context: Context): AuthManager {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: AuthManager(context).also { INSTANCE = it }
@@ -65,12 +72,17 @@ class AuthManager private constructor(context: Context) {
 
     private suspend fun signInWithEmail(email: String, password: String): Result<User> {
         return try {
+            // Sign in with email
             supabase.auth.signInWith(Email) {
                 this.email = email
                 this.password = password
             }
+            // Save the current session
             val session = supabase.auth.currentSessionOrNull()
+            // Save the current user
             val currentUser = supabase.auth.currentUserOrNull()
+            // In case there is a valid session with valid user
+            // Update the cached user in the repository
             if (session != null && currentUser != null) {
                 val userId = currentUser.id
                 val userResult = userRepository.fetchUserById(userId, cache = true)
@@ -96,7 +108,6 @@ class AuthManager private constructor(context: Context) {
      * 
      * @return Result with the signed up User or an error if sign up or user creation fails
      */
-
     private suspend fun signUpWithEmail(email: String, password: String): Result<User> {
         return try {
             supabase.auth.signUpWith(Email) {
@@ -131,7 +142,6 @@ class AuthManager private constructor(context: Context) {
      * 
      * @return Result with the signed in User or an error if sign in or fetching/creation fails
      */
-
     private suspend fun signInWithGoogle(): Result<User> {
         return try {
             val noncePair = createNonce()
@@ -239,7 +249,13 @@ class AuthManager private constructor(context: Context) {
     }
 
     // Convenience methods for Java callers to execute suspend functions and receive results via callback
-    
+
+    /**
+     * Handle signing in via email
+     * @param email Email
+     * @param password Password
+     * @param callback Callback with the result
+     */
     fun signInWithEmail(email: String, password: String, callback: AuthCallback) {
         scope.launch {
             val result = signInWithEmail(email, password)
@@ -247,6 +263,12 @@ class AuthManager private constructor(context: Context) {
         }
     }
 
+    /**
+     * Handle signing up via email
+     * @param email Email
+     * @param password Password
+     * @param callback Callback with the result
+     */
     fun signUpWithEmail(email: String, password: String, callback: AuthCallback) {
         scope.launch {
             val result = signUpWithEmail(email, password)
@@ -254,6 +276,10 @@ class AuthManager private constructor(context: Context) {
         }
     }
 
+    /**
+     * Handle signing up via Google account
+     * @param callback Callback with the result
+     */
     fun signInWithGoogle(callback: AuthCallback) {
         scope.launch {
             val result = signInWithGoogle()
@@ -261,6 +287,10 @@ class AuthManager private constructor(context: Context) {
         }
     }
 
+    /**
+     * Handle logging out
+     * @param callback Callback with the result
+     */
     fun logout(callback: (Result<Void>) -> Unit) {
         scope.launch {
             val result = logout()
@@ -268,6 +298,10 @@ class AuthManager private constructor(context: Context) {
         }
     }
 
+    /**
+     * Get the current user from the session
+     * @param callback Callback with the result
+     */
     fun getUserFromSession(callback: AuthCallback) {
         scope.launch {
             val cachedUser = getUserFromSession()
