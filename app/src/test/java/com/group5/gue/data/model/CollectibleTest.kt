@@ -30,7 +30,12 @@ class CollectibleTest {
         assertTrue(result is Result.Error)
         assertEquals("Score cannot be negative", (result as Result.Error).error.message)
     }
-
+    @Test
+    fun `collectible with surrounding spaces in name is valid`() {
+        val collectible = Collectible(name = "  Valid Name  ", score = 10)
+        val result = collectible.validated()
+        assertTrue(result is Result.Success)
+    }
     @Test
     fun `collectible default values`() {
         val collectible = Collectible()
