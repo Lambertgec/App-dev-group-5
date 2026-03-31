@@ -7,4 +7,9 @@
     <color name="gradient_end">#FE1313</color>
     <color name="light_gray">#D7D6D6</color>
     <color name="gray_text">#888888</color>
+
+    <color name="gold">#FFD700</color>
+    <color name="silver">#C0C0C0</color>
+    <color name="bronze">#CD7F32</color>
+    <color name="rank_default">#F5F5F5</color>
 </resources>

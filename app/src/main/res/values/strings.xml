@@ -123,5 +123,7 @@
     <string name="choose_calendar">Choose a calendar</string>
 
     <string name="menu_leaderboard">Leaderboard</string>
+    <string name="leaderboard_title">Leaderboard</string>
+    <string name="leaderboard_pts">%1$d pts</string>
 
 </resources>
