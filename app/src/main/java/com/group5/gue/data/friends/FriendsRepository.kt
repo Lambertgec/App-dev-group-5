@@ -182,24 +182,54 @@ open class FriendsRepository protected constructor() : BaseRepository {
             }
 
             val topUsers = try {
-                // Query profiles table, sort by score descending, limit to 10
                 val response = client.from("profile").select {
                     filter {
                         neq("display_name", "")
                     }
-                    order(column = "score", order = io.github.jan.supabase.postgrest.query.Order.DESCENDING)
+                    order(
+                        column = "score",
+                        order = io.github.jan.supabase.postgrest.query.Order.DESCENDING
+                    )
                     limit(10)
                 }
 
-                response.decodeList<Profile>()
+                val list = response.decodeList<Profile>().toMutableList()
+
+                val currentUser = client.from("profile").select {
+                    filter { eq("id", currentUserId) }
+                }.decodeSingleOrNull<Profile>()
+
+                if (currentUser != null && list.none { it.id == currentUser.id }) {
+                    list.add(currentUser)
+                }
+
+                list.sortedByDescending { it.score }
+
             } catch (e: Exception) {
                 Log.e("FriendsRepository", "fetchUsersWithScores error", e)
                 emptyList()
             }
+
             withContext(Dispatchers.Main) {
                 callback(topUsers)
             }
         }
+    }
+
+    /**
+     * Retrieves the unique identifier of the currently authenticated user.
+     *
+     * This method accesses the active Supabase authentication session and returns
+     * the user's ID if a session exists. If no user is logged in or the session
+     * is unavailable, it returns null.
+     *
+     * This is primarily used for identifying the current user in features such as
+     * leaderboards, friend relationships, and profile-specific UI logic.
+     *
+     * @return The current user's unique ID (UUID as a String), or null if no user is authenticated.
+     */
+    fun getCurrentUserId(): String? {
+        return client.auth.currentSessionOrNull()?.user?.id
     }
 
     /**
@@ -218,7 +248,6 @@ open class FriendsRepository protected constructor() : BaseRepository {
             }
 
             val friends = try {
-                // Query follows table and join with profile to get names and scores
                 val response = client.from(tableName).select(
                     Columns.raw("user_id, profile!user_id(display_name, score)")
                 ) {
@@ -227,15 +256,25 @@ open class FriendsRepository protected constructor() : BaseRepository {
                     }
                 }
 
-                // Extract profiles from the wrapped join result and sort them
                 val entries = response.decodeList<FollowEntry>()
-                entries.mapNotNull { it.profile }
-                    .sortedByDescending { it.score }
+
+                val list = entries.mapNotNull { it.profile }.toMutableList()
+
+                val currentUser = client.from("profile").select {
+                    filter { eq("id", currentUserId) }
+                }.decodeSingleOrNull<Profile>()
+
+                if (currentUser != null) {
+                    list.add(currentUser)
+                }
+
+                list.sortedByDescending { it.score }
 
             } catch (e: Exception) {
                 Log.e("FriendsRepository", "fetchFriendsWithScores error", e)
                 emptyList()
             }
+
             withContext(Dispatchers.Main) {
                 callback(friends)
             }

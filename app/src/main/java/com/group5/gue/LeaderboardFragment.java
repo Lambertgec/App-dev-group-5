@@ -33,6 +33,8 @@ public class LeaderboardFragment extends Fragment {
     // View binding for the leaderboard fragment layout.
     private FragmentLeaderboardBinding binding;
 
+    private String currentUserId;
+
     /**
      * Default constructor for LeaderboardFragment.
      */
@@ -75,11 +77,9 @@ public class LeaderboardFragment extends Fragment {
             if (binding == null) {
                 return Unit.INSTANCE;
             }
-            if (!profiles.isEmpty()) {
-                // If friends data is available, update the UI with it
+            if (profiles.size() > 1) {
                 updateLeaderboardUI(profiles);
             } else {
-                // If no friends exist or they have no scores, fall back to global leaderboard
                 friendRepository.fetchUsersWithScores(globalProfiles -> {
                     if (binding != null) {
                         updateLeaderboardUI(globalProfiles);
@@ -89,6 +89,8 @@ public class LeaderboardFragment extends Fragment {
             }
             return Unit.INSTANCE;
         });
+
+        currentUserId = FriendsRepository.getInstance().getCurrentUserId();
     }
 
     /**
@@ -133,8 +135,15 @@ public class LeaderboardFragment extends Fragment {
                 }
 
                 // Set the display name, defaulting to "Unknown" if it's null
+                boolean isCurrentUser = currentUserId != null &&
+                        profile.getId() != null &&
+                        profile.getId().equals(currentUserId);
+
                 holder.itemBinding.leaderboardNameTextView.setText(
-                        profile.getDisplayName() != null ? profile.getDisplayName() : "Unknown");
+                        isCurrentUser ? (profile.getDisplayName() + " (YOU)") :
+                                (profile.getDisplayName() != null ? profile.getDisplayName() :
+                                        "Unknown")
+                );
                 
                 // Format and set the score text using a string resource for internationalization
                 holder.itemBinding.leaderboardScoreTextView.setText(
