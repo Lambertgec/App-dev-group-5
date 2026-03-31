@@ -1,6 +1,7 @@
 package com.group5.gue.data.model
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
 class AnnotationInsertTest {
@@ -29,5 +30,29 @@ class AnnotationInsertTest {
         val insert = AnnotationInsert()
         assertEquals(null, insert.building)
         assertEquals(null, insert.roomName)
+        assertEquals(null, insert.level)
+        assertEquals(null, insert.latitude)
+        assertEquals(null, insert.longitude)
+        assertEquals(null, insert.creatorId)
+    }
+
+    @Test
+    fun testAnnotationInsertEquality() {
+        val insert1 = AnnotationInsert(building = "Atlas", roomName = "0.01")
+        val insert2 = AnnotationInsert(building = "Atlas", roomName = "0.01")
+        val insert3 = AnnotationInsert(building = "Flux", roomName = "0.01")
+
+        assertEquals(insert1, insert2)
+        assertEquals(insert1.hashCode(), insert2.hashCode())
+        assertNotEquals(insert1, insert3)
+    }
+
+    @Test
+    fun testAnnotationInsertCopy() {
+        val insert = AnnotationInsert(building = "Atlas", roomName = "0.01")
+        val copied = insert.copy(building = "Flux")
+
+        assertEquals("Flux", copied.building)
+        assertEquals("0.01", copied.roomName)
     }
 }
