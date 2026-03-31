@@ -7,4 +7,6 @@
     <color name="gradient_end">#FE1313</color>
     <color name="light_gray">#D7D6D6</color>
     <color name="gray_text">#888888</color>
+    <color name="gray">#888888</color>
+    <color name="divider">#E0E0E0</color>
 </resources>

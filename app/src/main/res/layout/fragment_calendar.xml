@@ -10,8 +10,9 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="20dp">
 
+        <!-- Calendar picker section -->
         <LinearLayout
             android:id="@+id/SectionCalendarPicker"
             android:layout_width="match_parent"
@@ -35,13 +36,15 @@
 
         </LinearLayout>
 
+        <!-- Divider -->
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp"
-            android:background="@color/light_gray" />
+            android:background="@color/primary_purple" />
 
+        <!-- Date picker section -->
         <LinearLayout
             android:id="@+id/SectionDatePicker"
             android:layout_width="match_parent"
@@ -80,8 +83,12 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/eventsRecyclerView"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:layout_marginTop="8dp"
+            android:background="@color/light_gray"
+            android:clipToPadding="false"
+            android:padding="8dp"
             tools:listitem="@layout/item_event" />
 
     </LinearLayout>
