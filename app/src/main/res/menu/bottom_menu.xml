@@ -15,7 +15,7 @@
         android:icon="@drawable/friends_placeholder"
         android:title="Friends" />
     <item
-        android:id="@+id/ldboard"
+        android:id="@+id/leaderboard"
         android:icon="@drawable/leaderboard_placeholder"
-        android:title="Ldboard" />
+        android:title="@string/menu_leaderboard" />
 </menu>
