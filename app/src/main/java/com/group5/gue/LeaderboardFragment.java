@@ -109,6 +109,10 @@ public class LeaderboardFragment extends Fragment {
             public void onBindViewHolder(@NonNull LeaderboardViewHolder holder, int position) {
                 // Get the profile data for the current position
                 Profile profile = profiles.get(position);
+
+                // Set the rank text (1st, 2nd, 3rd, 4th, ..., 11th, ..., 21st, 22nd, etc.)
+                int rank = position + 1;
+                holder.itemBinding.leaderboardRankTextView.setText(formatRank(rank));
                 
                 // Set the display name, defaulting to "Unknown" if it's null
                 holder.itemBinding.leaderboardNameTextView.setText(
@@ -123,6 +127,21 @@ public class LeaderboardFragment extends Fragment {
             public int getItemCount() {
                 // Return the size of the profile list
                 return profiles.size();
+            }
+
+            /**
+             * Formats an integer rank into an ordinal string (e.g., 1st, 2nd, 3rd, 11th, 21st, 22nd).
+             */
+            private String formatRank(int rank) {
+                if (rank % 100 >= 11 && rank % 100 <= 13) {
+                    return rank + "th";
+                }
+                switch (rank % 10) {
+                    case 1:  return rank + "st";
+                    case 2:  return rank + "nd";
+                    case 3:  return rank + "rd";
+                    default: return rank + "th";
+                }
             }
         });
     }
