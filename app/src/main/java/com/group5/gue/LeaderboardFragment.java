@@ -1,5 +1,6 @@
 package com.group5.gue;
 
+import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -7,6 +8,7 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -47,7 +49,7 @@ public class LeaderboardFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout
+        // Inflate the layout using view binding
         binding = FragmentLeaderboardBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
@@ -110,17 +112,33 @@ public class LeaderboardFragment extends Fragment {
                 // Get the profile data for the current position
                 Profile profile = profiles.get(position);
 
-                // Set the rank text (1st, 2nd, 3rd, 4th, ..., 11th, ..., 21st, 22nd, etc.)
+                // Set the rank text (1st, 2nd, 3rd, 4th, etc.)
                 int rank = position + 1;
                 holder.itemBinding.leaderboardRankTextView.setText(formatRank(rank));
                 
+                // Determine the background color based on the rank (Gold for 1st, Silver for 2nd, etc.)
+                int colorRes;
+                switch (rank) {
+                    case 1: colorRes = R.color.gold; break;
+                    case 2: colorRes = R.color.silver; break;
+                    case 3: colorRes = R.color.bronze; break;
+                    default: colorRes = R.color.rank_default; break;
+                }
+                
+                // Apply the selected color to the rank icon's background circle
+                if (holder.itemBinding.leaderboardRankContainer.getBackground() != null) {
+                    holder.itemBinding.leaderboardRankContainer.getBackground().setColorFilter(
+                            ContextCompat.getColor(holder.itemView.getContext(), colorRes), 
+                            PorterDuff.Mode.SRC_IN);
+                }
+
                 // Set the display name, defaulting to "Unknown" if it's null
                 holder.itemBinding.leaderboardNameTextView.setText(
                         profile.getDisplayName() != null ? profile.getDisplayName() : "Unknown");
                 
-                // Format and set the score text
+                // Format and set the score text using a string resource for internationalization
                 holder.itemBinding.leaderboardScoreTextView.setText(
-                        String.valueOf(profile.getScore()) + " pts");
+                        getString(R.string.leaderboard_pts, (int) profile.getScore()));
             }
 
             @Override
@@ -131,6 +149,9 @@ public class LeaderboardFragment extends Fragment {
 
             /**
              * Formats an integer rank into an ordinal string (e.g., 1st, 2nd, 3rd, 11th, 21st, 22nd).
+             * 
+             * @param rank The numerical rank.
+             * @return The formatted string (e.g., "1st").
              */
             private String formatRank(int rank) {
                 if (rank % 100 >= 11 && rank % 100 <= 13) {
@@ -157,7 +178,7 @@ public class LeaderboardFragment extends Fragment {
 
     /**
      * ViewHolder class for individual leaderboard items.
-     * Uses view binding to access the item's views.
+     * Uses view binding to access the item's views efficiently.
      */
     static class LeaderboardViewHolder extends RecyclerView.ViewHolder {
         ItemLeaderboardBinding itemBinding;
